@@ -44,6 +44,10 @@
 
 - [x] تعریف Types و Zod Schemas (crawler، ghateline، ai، common، schema.ts)
 - [x] لایه پایه کرالر: Fetcher interface، HttpFetcher، BrowserFetcher، BaseAdapter، AdapterRegistry، Crawler، Errors
+- [x] YadakMarketAdapter (WooCommerce) — cheerio، parsePersianPrice، تصاویر full-size، specifications، breadcrumb، stock
+- [x] adapters/index.ts — ثبت همه adapters با adapterRegistry.register
+- [x] تست‌های node:test برای YadakMarketAdapter — 17/17 پاس
+- [x] scripts/test-crawl.ts — CLI برای تست دستی (npm run test:crawl -- <url>)
 - [ ] پیاده‌سازی `DigikalaCrawler` با Playwright
 - [ ] BullMQ `crawl.queue` و `crawl.worker`
 - [ ] Repository: `ProductRepository` و `JobRepository`
@@ -112,7 +116,8 @@
 | 2026-05-23 | 1 | prisma | schema.prisma (6 model، 3 enum)، seed.ts، singleton client، package.json prisma.seed |
 | 2026-05-23 | 1 | types | src/types/common.ts، crawler.ts، ghateline.ts، ai.ts و src/lib/crawler/schema.ts — tsc پاک |
 | 2026-05-23 | 1 | crawler-core | fetchers/types.ts، http-fetcher.ts، browser-fetcher.ts، core/errors.ts، base-adapter.ts، adapter-registry.ts، crawler.ts — tsc پاک |
+| 2026-05-23 | 1 | yadak-adapter | adapters/yadakmarket.ts، adapters/index.ts، __tests__/yadakmarket.test.ts (17/17)، scripts/test-crawl.ts — tsc پاک |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.1 (لایه پایه کرالر) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.1b (YadakMarket adapter) کامل شد*

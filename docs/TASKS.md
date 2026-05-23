@@ -25,6 +25,7 @@
 |---|-----|--------|---------|
 | 1.0 | Types و Zod Schemas (common، crawler، ghateline، ai، schema.ts) | ✅ | فاز 0 |
 | 1.1 | لایه پایه کرالر: Fetcher، HttpFetcher، BrowserFetcher، BaseAdapter، AdapterRegistry، Crawler، Errors | ✅ | 1.0 |
+| 1.1b | YadakMarketAdapter (WooCommerce) + adapters/index.ts + تست‌های node:test + CLI test-crawl.ts | ✅ | 1.1 |
 | 1.2 | `DigikalaCrawler` با Playwright | ⬜ | 1.1 |
 | 1.3 | `ProductRepository` و `JobRepository` | ⬜ | 0.6 |
 | 1.4 | BullMQ `crawl.queue` و `crawl.worker` | ⬜ | 1.2, 1.3, 0.7 |
