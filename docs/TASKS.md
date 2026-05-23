@@ -24,14 +24,13 @@
 | # | تسک | وضعیت | وابستگی |
 |---|-----|--------|---------|
 | 1.0 | Types و Zod Schemas (common، crawler، ghateline، ai، schema.ts) | ✅ | فاز 0 |
-| 1.1 | `CrawlerAdapter` abstract class | ⬜ | فاز 0 کامل |
+| 1.1 | لایه پایه کرالر: Fetcher، HttpFetcher، BrowserFetcher، BaseAdapter، AdapterRegistry، Crawler، Errors | ✅ | 1.0 |
 | 1.2 | `DigikalaCrawler` با Playwright | ⬜ | 1.1 |
-| 1.3 | Factory function `getCrawler(url)` | ⬜ | 1.2 |
-| 1.4 | `ProductRepository` و `JobRepository` | ⬜ | 0.6 |
-| 1.5 | BullMQ `crawl.queue` و `crawl.worker` | ⬜ | 1.3, 1.4, 0.7 |
-| 1.6 | `POST /api/crawl/start` route handler | ⬜ | 1.5 |
-| 1.7 | `GET /api/jobs/{id}` route handler | ⬜ | 1.4 |
-| 1.8 | تست دستی: کرال کامل یک محصول دیجی‌کالا | ⬜ | 1.1–1.7 |
+| 1.3 | `ProductRepository` و `JobRepository` | ⬜ | 0.6 |
+| 1.4 | BullMQ `crawl.queue` و `crawl.worker` | ⬜ | 1.2, 1.3, 0.7 |
+| 1.5 | `POST /api/crawl/start` route handler | ⬜ | 1.4 |
+| 1.6 | `GET /api/jobs/{id}` route handler | ⬜ | 1.3 |
+| 1.7 | تست دستی: کرال کامل یک محصول دیجی‌کالا | ⬜ | 1.1–1.6 |
 
 ---
 
@@ -87,4 +86,4 @@
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.0 (Types & Schemas) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.1 (لایه پایه کرالر) کامل شد*

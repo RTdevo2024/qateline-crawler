@@ -10,7 +10,7 @@
 | فاز | عنوان | وضعیت | پیشرفت |
 |-----|-------|--------|--------|
 | 0 | راه‌اندازی | ✅ کامل | 7/7 |
-| 1 | هسته کرالر | ⏳ منتظر | 0/8 |
+| 1 | هسته کرالر | 🔄 در حال اجرا | 2/8 |
 | 2 | AI و یکپارچه‌سازی | ⏳ منتظر | 0/5 |
 | 3 | پنل مدیریت | ⏳ منتظر | 0/6 |
 | 4 | تست و دیپلوی | ⏳ منتظر | 0/4 |
@@ -43,9 +43,8 @@
 **پیش‌نیاز:** اتمام کامل فاز 0
 
 - [x] تعریف Types و Zod Schemas (crawler، ghateline، ai، common، schema.ts)
-- [ ] پیاده‌سازی `CrawlerAdapter` abstract class
+- [x] لایه پایه کرالر: Fetcher interface، HttpFetcher، BrowserFetcher، BaseAdapter، AdapterRegistry، Crawler، Errors
 - [ ] پیاده‌سازی `DigikalaCrawler` با Playwright
-- [ ] Factory function `getCrawler(url)`
 - [ ] BullMQ `crawl.queue` و `crawl.worker`
 - [ ] Repository: `ProductRepository` و `JobRepository`
 - [ ] API Route: `POST /api/crawl/start`
@@ -112,7 +111,8 @@
 | 2026-05-23 | 0 | setup | Next.js 14، dependencies، shadcn/ui، ساختار پوشه‌ها، TypeScript strict |
 | 2026-05-23 | 1 | prisma | schema.prisma (6 model، 3 enum)، seed.ts، singleton client، package.json prisma.seed |
 | 2026-05-23 | 1 | types | src/types/common.ts، crawler.ts، ghateline.ts، ai.ts و src/lib/crawler/schema.ts — tsc پاک |
+| 2026-05-23 | 1 | crawler-core | fetchers/types.ts، http-fetcher.ts، browser-fetcher.ts، core/errors.ts، base-adapter.ts، adapter-registry.ts، crawler.ts — tsc پاک |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.0 (Types & Schemas) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.1 (لایه پایه کرالر) کامل شد*

@@ -50,7 +50,7 @@ CrawledProduct {
 
 ## چرا Adapter Pattern برای کرالرها؟
 
-**مشکل:** هر سایت (دیجی‌کالا، ترب، ...) ساختار HTML و URL متفاوتی دارد.
+**مشکل:** هر سایت (دیجی‌کالا، ترب، ...) ساختار HTML و URL متفاوتی دارد. علاوه بر این، بعضی سایت‌ها نیاز به browser واقعی دارند (JavaScript-heavy) و بعضی با HTTP ساده کار می‌کنند.
 
 **گزینه‌های بررسی‌شده:**
 1. **یک فایل با if/else برای هر سایت** — غیر قابل نگهداری با رشد تعداد سایت‌ها
@@ -60,14 +60,62 @@ CrawledProduct {
 **مزایا:**
 - اضافه کردن سایت جدید = یک فایل جدید، بدون تغییر کد موجود (Open/Closed Principle)
 - تست مستقل هر adapter
-- Factory function ساده برای انتخاب adapter بر اساس URL
+- AdapterRegistry مرکزی برای انتخاب adapter بر اساس URL
+
+### معماری پیاده‌سازی‌شده
 
 ```
-CrawlerAdapter (abstract)
-├── DigikalaCrawler
-├── TorobCrawler
-└── [سایت‌های بعدی...]
+src/lib/crawler/
+├── fetchers/
+│   ├── types.ts           ← interface Fetcher + FetchResult + FetchOptions
+│   ├── http-fetcher.ts    ← HttpFetcher (axios) — سایت‌های ساده
+│   └── browser-fetcher.ts ← BrowserFetcher (Playwright) — سایت‌های JS-heavy
+│
+└── core/
+    ├── errors.ts          ← CrawlerError، AdapterNotFoundError، FetchError، ParseError
+    ├── base-adapter.ts    ← abstract class BaseAdapter
+    ├── adapter-registry.ts← AdapterRegistry singleton
+    └── crawler.ts         ← Crawler — entry point
 ```
+
+### لایه Fetcher: چرا دو نوع؟
+
+| | HttpFetcher | BrowserFetcher |
+|---|---|---|
+| **تکنولوژی** | axios | Playwright (Chromium) |
+| **سرعت** | ≈ ۵۰۰ms | ≈ ۳-۵s |
+| **JavaScript** | ✗ اجرا نمی‌کند | ✓ کامل |
+| **ردشدن از bot detection** | پایین | بالا |
+| **مصرف RAM** | کم | زیاد |
+| **مناسب برای** | API-based, SSR | SPA, JS-rendered |
+
+`requiresBrowser: boolean` در هر adapter مشخص می‌کند کدام fetcher استفاده شود.
+`BrowserFetcher` یک browser instance را به صورت singleton نگه می‌دارد تا از overhead راه‌اندازی مجدد جلوگیری شود.
+
+### جریان داده در BaseAdapter
+
+```typescript
+// adapter.crawl(url) در واقع:
+fetcher.fetch(url)          // → FetchResult { html, finalUrl, statusCode, headers }
+  → this.extract(html, url) // → CrawledProductData
+```
+
+هر adapter باید دو متد abstract را پیاده کند:
+- `canHandle(url)`: آیا این URL متعلق به این سایت است؟
+- `extract(html, url)`: داده محصول را از HTML استخراج کن
+
+### AdapterRegistry
+
+```typescript
+adapterRegistry.register(new DigikalaCrawler());
+adapterRegistry.register(new TorobCrawler());
+
+// در Crawler:
+const adapter = adapterRegistry.findByUrl(url); // یافتن با canHandle()
+const data = await adapter.crawl(url);
+```
+
+Registry یک singleton module-level است — همه ماژول‌ها به یک instance مشترک دسترسی دارند.
 
 ---
 
@@ -180,4 +228,4 @@ id, jobId, level, message, metadata(jsonb), createdAt
 
 ---
 
-*آخرین به‌روزرسانی: فاز 0 — طراحی اولیه*
+*آخرین به‌روزرسانی: فاز 1 — لایه پایه کرالر (Fetchers + BaseAdapter + Registry)*
