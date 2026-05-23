@@ -23,6 +23,7 @@
 
 | # | تسک | وضعیت | وابستگی |
 |---|-----|--------|---------|
+| 1.0 | Types و Zod Schemas (common، crawler، ghateline، ai، schema.ts) | ✅ | فاز 0 |
 | 1.1 | `CrawlerAdapter` abstract class | ⬜ | فاز 0 کامل |
 | 1.2 | `DigikalaCrawler` با Playwright | ⬜ | 1.1 |
 | 1.3 | Factory function `getCrawler(url)` | ⬜ | 1.2 |
@@ -86,4 +87,4 @@
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — فاز 0 (0.1–0.5) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.0 (Types & Schemas) کامل شد*

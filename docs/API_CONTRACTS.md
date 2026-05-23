@@ -557,4 +557,166 @@ const response = await anthropic.messages.create({
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — مستندات اولیه، جزئیات بیشتر در فازهای بعدی اضافه می‌شود*
+---
+
+## TypeScript Types و Zod Schemas
+
+> تعریف کامل types در `src/types/` و schemas در `src/lib/crawler/` است.
+
+---
+
+### `src/types/common.ts`
+
+```typescript
+// Result<T, E> — خروجی توابع قابل شکست
+type Result<T, E = Error> =
+  | { success: true; data: T }
+  | { success: false; error: E };
+
+// PaginatedResponse<T> — پاسخ لیستی
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+// Status strings (هم‌راستا با Prisma enums)
+type CrawlJobStatus    = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+type CrawledProductStatus = 'RAW' | 'PROCESSED' | 'REVIEWED' | 'PUBLISHED' | 'REJECTED' | 'FAILED';
+type LogLevel          = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+```
+
+---
+
+### `src/types/crawler.ts`
+
+**ساختار خروجی استاندارد هر crawler adapter — ذخیره در `rawData` جدول `crawled_products`:**
+
+```typescript
+type CrawledProductData = {
+  source: {
+    siteSlug: string;   // مثال: 'digikala'
+    url: string;        // URL کامل صفحه محصول
+    crawledAt: string;  // ISO 8601
+  };
+  product: {
+    title: string;
+    description?: string;             // ممکن است HTML داشته باشد
+    images: string[];                 // URL های معتبر
+    attributes: Record<string, string>; // مشخصات فنی key-value
+    category?: string;
+    brand?: string;
+  };
+  inventory: {
+    price: number;          // ریال، عدد صحیح
+    originalPrice?: number; // قبل از تخفیف
+    inStock: boolean;
+    quantity?: number;
+  };
+};
+```
+
+**Zod schema:** `CrawledProductDataSchema` — برای runtime validation
+
+---
+
+### `src/types/ghateline.ts`
+
+**Types مربوط به API قطعه‌لاین:**
+
+```typescript
+// درخواست ایجاد محصول → POST /api/v1/products/create
+interface CreateProductRequest {
+  title: string;
+  price: number;
+  user_id: string;         // از GHATELINE_ADMIN_USER_ID
+  description?: string;
+  status?: 'draft' | 'active' | 'inactive';
+  attributes?: Record<string, string>;
+  images?: string[];
+}
+
+// درخواست ایجاد موجودی → POST /api/v1/inventories/product/{uuid}/create
+interface CreateInventoryRequest {
+  storage_uuid: string;    // از GHATELINE_DEFAULT_STORAGE_UUID
+  quantity: number;
+  price: number;
+  status?: 'available' | 'unavailable';
+}
+
+// wrapper پاسخ API (برخی endpoint ها data، برخی response می‌دهند)
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  response?: T;
+  code?: number;
+  message?: string;
+}
+```
+
+---
+
+### `src/types/ai.ts`
+
+**Types مربوط به پردازش Claude AI — ذخیره در `processedData`:**
+
+```typescript
+// ورودی به Claude
+interface AIProcessingInput {
+  rawTitle: string;
+  rawDescription?: string;
+  price: number;
+  attributes: Record<string, string>;
+  imageCount: number;
+  sourceUrl: string;
+  sourceSite: string;
+}
+
+// خروجی Claude (validate شده با Zod schema)
+type AIProcessingOutput = {
+  title: string;        // ۵–۱۰۰ کاراکتر
+  description: string;  // ۵۰–۱۰۰۰ کاراکتر
+  categoryHint?: string;
+  keywords: string[];   // ۳–۱۰ کلیدواژه
+  attributes?: Record<string, string>;
+  brand?: string;
+  confidence: number;   // 0–1
+};
+
+// container کامل processedData در DB
+interface ProcessedProductData {
+  output: AIProcessingOutput;
+  meta: {
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    durationMs: number;
+    processedAt: string; // ISO 8601
+  };
+}
+```
+
+**Zod schema:** `AIProcessingOutputSchema` — برای validate کردن JSON خروجی Claude
+
+---
+
+### `src/lib/crawler/schema.ts`
+
+**توابع validation:**
+
+```typescript
+// validate یک محصول — برگشت Result<CrawledProductData>
+function validateCrawledData(data: unknown): Result<CrawledProductData>
+
+// type guard
+function isValidProductData(data: unknown): data is CrawledProductData
+
+// validate آرایه محصولات (برای category crawl)
+function validateCrawledDataArray(data: unknown): Result<CrawledProductData[]>
+
+// type guard برای آرایه
+function isValidProductDataArray(data: unknown): data is CrawledProductData[]
+```
+
+---
+
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.0 (Types & Schemas) کامل شد*
