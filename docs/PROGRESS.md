@@ -1,7 +1,7 @@
 # PROGRESS.md — ردگیری پیشرفت پروژه
 
 > این فایل باید بعد از هر تسک آپدیت شود.
-> وضعیت کلی: **فاز 0 — در حال اجرا**
+> وضعیت کلی: **فاز 1 — در صف**
 
 ---
 
@@ -9,7 +9,7 @@
 
 | فاز | عنوان | وضعیت | پیشرفت |
 |-----|-------|--------|--------|
-| 0 | راه‌اندازی | 🔄 در حال اجرا | 1/7 |
+| 0 | راه‌اندازی | ✅ کامل | 7/7 |
 | 1 | هسته کرالر | ⏳ منتظر | 0/8 |
 | 2 | AI و یکپارچه‌سازی | ⏳ منتظر | 0/5 |
 | 3 | پنل مدیریت | ⏳ منتظر | 0/6 |
@@ -22,13 +22,14 @@
 **هدف:** ایجاد ساختار پایه پروژه، تنظیم ابزارها و اطمینان از کارکرد محیط.
 
 - [x] ایجاد مستندات پایه (CLAUDE.md, DESIGN.md, TASKS.md, DECISIONS.md, API_CONTRACTS.md)
-- [ ] `npm init` + نصب dependencies اصلی
-- [ ] تنظیم TypeScript (`tsconfig.json` با strict mode)
-- [ ] تنظیم ESLint + Prettier
-- [ ] تنظیم Prisma + اتصال به PostgreSQL
-- [ ] ایجاد schema اولیه Prisma و اجرای migration
-- [ ] تنظیم Redis connection + BullMQ queue اولیه
-- [ ] تایید اجرای `npm run dev` بدون خطا
+- [x] Next.js 14 + نصب dependencies اصلی (Prisma, BullMQ, Playwright, Anthropic SDK, ...)
+- [x] تنظیم TypeScript (`tsconfig.json` با strict + noUncheckedIndexedAccess + exactOptionalPropertyTypes)
+- [x] ESLint (از طریق Next.js) + shadcn/ui init
+- [x] ساختار پوشه‌های پروژه (src/lib/crawler, ai, db, queue, workers, types, prisma)
+- [x] shadcn/ui کامپوننت‌ها: button, input, label, card, table, badge, dialog, dropdown-menu, form, select, textarea, separator, skeleton, tabs, sonner
+- [x] تایید `npm run build` بدون خطا
+- [ ] تنظیم Prisma + schema اولیه + اجرای migration (فاز 1)
+- [ ] تنظیم Redis connection + BullMQ queue اولیه (فاز 1)
 
 **بلاک‌ها:** هیچ
 
@@ -106,6 +107,7 @@
 | تاریخ | فاز | تسک | توضیح |
 |-------|-----|-----|-------|
 | 2026-05-23 | 0 | مستندات | ایجاد docs/ با فایل‌های پایه |
+| 2026-05-23 | 0 | setup | Next.js 14، dependencies، shadcn/ui، ساختار پوشه‌ها، TypeScript strict |
 
 ---
 

@@ -23,7 +23,7 @@
 
 ## راه‌اندازی محلی
 
-### ۱. Clone و نصب
+### ۱. Clone و نصب dependencies
 
 ```bash
 git clone <repo-url>
@@ -38,13 +38,48 @@ cp .env.example .env.local
 # فایل .env.local را با مقادیر واقعی پر کنید
 ```
 
-### ۳. دیتابیس
+### ۳. راه‌اندازی PostgreSQL و Redis
+
+**با Docker (توصیه شده):**
+
+```bash
+# PostgreSQL
+docker run -d \
+  --name qateline-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=qateline_crawler \
+  -p 5432:5432 \
+  postgres:16
+
+# Redis
+docker run -d \
+  --name qateline-redis \
+  -p 6379:6379 \
+  redis:7
+```
+
+**یا با Docker Compose (وقتی docker-compose.yml آماده شد):**
+
+```bash
+docker compose up -d postgres redis
+```
+
+**نصب محلی (macOS):**
+
+```bash
+brew install postgresql@16 redis
+brew services start postgresql@16
+brew services start redis
+```
+
+### ۴. اجرای migration‌ها
 
 ```bash
 npx prisma migrate dev
 ```
 
-### ۴. اجرا
+### ۵. اجرا
 
 ```bash
 # ترمینال ۱ — Next.js dev server
@@ -64,6 +99,7 @@ npm run worker
 |------|-----------|
 | Framework | Next.js 14 App Router |
 | زبان | TypeScript (strict) |
+| UI | shadcn/ui + Tailwind CSS |
 | ORM | Prisma |
 | Database | PostgreSQL |
 | Queue | BullMQ |
@@ -88,7 +124,8 @@ npm run worker
 
 ## وضعیت پروژه
 
-🔄 **فاز 0 — در حال اجرا** (راه‌اندازی پایه)
+✅ **فاز 0 — کامل** (راه‌اندازی پایه)
+🔄 **فاز 1 — در صف** (هسته کرالر)
 
 ---
 
