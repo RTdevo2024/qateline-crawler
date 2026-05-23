@@ -73,6 +73,7 @@
 - [x] src/types/ai.ts — schema جدید با فیلدهای OpenAI (title, description HTML, category, attrs, title_en, slug, seo_title, seo_description)
 - [x] npm install openai + OPENAI_API_KEY در .env.example + npm run test:ai script
 - [x] کلاینت API قطعه‌لاین — GhatelineClient (axios+auth)، ProductsApi (Zod)، types کامل، singleton، CLI test
+- [x] InventoriesApi + StoragesApi + Publisher (rollback) + singleton‌ها + CLI test-publish.ts + API_CONTRACTS.md کامل
 - [ ] BullMQ `publish.worker` برای آپلود به قطعه‌لاین
 - [ ] تست دستی: کرال + پردازش + آپلود یک محصول کامل
 
@@ -124,7 +125,8 @@
 | 2026-05-23 | 1 | yadak-adapter | adapters/yadakmarket.ts، adapters/index.ts، __tests__/yadakmarket.test.ts (17/17)، scripts/test-crawl.ts — tsc پاک |
 | 2026-05-23 | 2 | ai-processor | src/lib/ai/{client,prompts,processor,index}.ts، scripts/test-ai.ts، types/ai.ts schema جدید — openai نصب، tsc پاک |
 | 2026-05-23 | 2 | ghateline-client | src/lib/ghateline/{types,client,products,index}.ts، scripts/test-ghateline-products.ts، docs/API_CONTRACTS.md — tsc پاک |
+| 2026-05-23 | 2 | ghateline-inventory | inventories.ts، storages.ts، publisher.ts (rollback)، index.ts آپدیت، scripts/test-publish.ts، API_CONTRACTS.md کامل — tsc پاک |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 2.2 (Ghateline API client) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 2.2b (Inventories + Storages + Publisher) کامل شد*

@@ -269,3 +269,142 @@ export interface GhatelineValidationError {
   message: string;
   errors: Record<string, string[]>;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inventory
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** آیتم تصویر موجودی */
+export interface GhatelineInventoryImage {
+  url: string;
+  alt?: string;
+}
+
+/**
+ * GhatelineInventory — یک رکورد موجودی در سیستم قطعه‌لاین.
+ *
+ * برگشتی از:
+ *   GET /api/v1/inventories/product/{product_uuid}  (در data آرایه)
+ *   GET /api/v1/inventories/show/{inventory_uuid}   (object تکی)
+ */
+export interface GhatelineInventory {
+  uuid: string;
+  product_uuid: string;
+  storage_uuid: string;
+  user_id: number;
+  price: number;
+  discount_price?: number;
+  discount_expire?: string;
+  discount_tree?: number[];
+  count: number;
+  min_sale?: number;
+  max_sale?: number;
+  original?: boolean;
+  used?: boolean;
+  weight?: number;
+  purchase_price?: number;
+  image?: GhatelineInventoryImage;
+  send_time?: string;
+  /** variables — کلید = عنوان variant (مثلاً «رنگ»)، مقدار = مقدار انتخابی */
+  variables?: Record<string, string>;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * CreateInventoryRequest — body درخواست:
+ * POST /api/v1/inventories/product/{product_uuid}/create
+ *
+ * فیلدهای اجباری: user_id، storage_uuid، price، count
+ */
+export interface CreateInventoryRequest {
+  /** شناسه عددی کاربر admin — integer، اجباری */
+  user_id: number;
+  /** UUID انبار — از GHATELINE_DEFAULT_STORAGE_UUID */
+  storage_uuid: string;
+  /**
+   * variants انتخاب‌شده برای این موجودی.
+   * مثال: { "رنگ": "مشکی", "سایز": "XL" }
+   * باید با price_model محصول مطابقت داشته باشد.
+   */
+  variables?: Record<string, string>;
+  /** قیمت فروش — ریال، integer */
+  price: number;
+  /** قیمت با تخفیف */
+  discount_price?: number;
+  /** تاریخ انقضا تخفیف — فرمت Y/m/d */
+  discount_expire?: string;
+  /** درخت تخفیف */
+  discount_tree?: number[];
+  /** تعداد موجودی */
+  count: number;
+  /** حداقل تعداد در هر سفارش */
+  min_sale?: number;
+  /** حداکثر تعداد در هر سفارش */
+  max_sale?: number;
+  /** آیا محصول اصل است */
+  original?: boolean;
+  /** آیا محصول دست دوم است */
+  used?: boolean;
+  /** وزن — گرم */
+  weight?: number;
+  /** قیمت خرید (هزینه تمام‌شده) */
+  purchase_price?: number;
+  /** تصویر موجودی */
+  image?: GhatelineInventoryImage;
+  /** زمان ارسال */
+  send_time?: string;
+}
+
+/**
+ * CreateInventoryApiResponse — پاسخ POST .../create
+ */
+export interface CreateInventoryApiResponse {
+  success: boolean;
+  message: string;
+  /** UUID موجودی تازه‌ایجادشده */
+  inventory_uuid: string;
+  code: number;
+}
+
+/** پارامترهای query برای GET /api/v1/inventories/product/{uuid} */
+export interface ListInventoriesParams {
+  page?: number;
+  per_page?: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Storage
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GhatelineStorage — یک انبار در سیستم قطعه‌لاین.
+ *
+ * برگشتی از GET /api/v1/storages
+ */
+export interface GhatelineStorage {
+  uuid: string;
+  name: string;
+  status: 'active' | 'inactive';
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** آیتم لیست محصولات یک انبار */
+export interface GhatelineStorageProduct {
+  product_uuid: string;
+  title: string;
+  quantity: number;
+}
+
+/** پارامترهای query برای لیست انبارها */
+export interface ListStoragesParams {
+  page?: number;
+  per_page?: number;
+}
+
+/** پارامترهای query برای لیست محصولات یک انبار */
+export interface ListStorageProductsParams {
+  page?: number;
+  per_page?: number;
+}

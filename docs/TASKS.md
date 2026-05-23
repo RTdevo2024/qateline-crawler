@@ -41,7 +41,8 @@
 |---|-----|--------|---------|
 | 2.1 | OpenAI GPT-4o client + prompt template + AIProcessor | ✅ | فاز 1 کامل |
 | 2.2 | `GhatelineClient` + `ProductsApi` + types + singleton + CLI test | ✅ | فاز 1 کامل |
-| 2.3 | BullMQ `publish.worker` | ⬜ | 2.1, 2.2 |
+| 2.2b | `InventoriesApi` + `StoragesApi` + `Publisher` (rollback) + CLI test-publish.ts | ✅ | 2.2 |
+| 2.3 | BullMQ `publish.worker` | ⬜ | 2.1, 2.2b |
 | 2.4 | اتصال `crawl.worker` به `publish.worker` | ⬜ | 2.3 |
 | 2.5 | تست دستی: چرخه کامل کرال → AI → آپلود | ⬜ | 2.1–2.4 |
 
@@ -87,4 +88,4 @@
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 2.2 (Ghateline API Client) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 2.2b (Inventories + Storages + Publisher) کامل شد*

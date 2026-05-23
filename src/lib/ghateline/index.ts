@@ -1,5 +1,8 @@
 import { GhatelineClient } from './client';
+import { InventoriesApi } from './inventories';
 import { ProductsApi } from './products';
+import { Publisher } from './publisher';
+import { StoragesApi } from './storages';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Singleton — ساخته‌شده از env variables هنگام import
@@ -12,11 +15,31 @@ if (!apiKey && process.env.NODE_ENV !== 'test') {
   console.warn('[Ghateline] GHATELINE_API_KEY is not set — requests will fail with 401');
 }
 
-/** singleton client — برای استفاده مستقیم در موارد custom */
+/** singleton HTTP client */
 export const ghatelineClient = new GhatelineClient(apiKey, baseUrl);
 
-/** singleton products API — برای CRUD عملیات محصول */
+/** singleton products API */
 export const ghatelineProducts = new ProductsApi(ghatelineClient);
+
+/** singleton inventories API */
+export const ghatelineInventories = new InventoriesApi(ghatelineClient);
+
+/** singleton storages API */
+export const ghatelineStorages = new StoragesApi(ghatelineClient);
+
+/**
+ * ghatelinePublisher — singleton Publisher.
+ *
+ * lazy: فقط وقتی نیاز داریم می‌سازیم چون constructor env vars را validate می‌کند.
+ * در محیط test یا وقتی env ها تنظیم نیستند، import این singleton خطا می‌دهد.
+ */
+let _publisher: Publisher | undefined;
+export function getPublisher(): Publisher {
+  if (_publisher === undefined) {
+    _publisher = new Publisher(ghatelineProducts, ghatelineInventories);
+  }
+  return _publisher;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Re-exports — برای import راحت در بقیه لایه‌های پروژه
@@ -24,6 +47,11 @@ export const ghatelineProducts = new ProductsApi(ghatelineClient);
 
 export { GhatelineClient, GhatelineApiError } from './client';
 export { ProductsApi } from './products';
+export { InventoriesApi } from './inventories';
+export { StoragesApi } from './storages';
+export { Publisher } from './publisher';
+export type { PublishInput, PublishResult, PublishInventoryData, CategoryMapping } from './publisher';
+
 export type {
   // Status
   GhatelineProductStatus,
@@ -46,6 +74,17 @@ export type {
   CreateProductApiResponse,
   UpdateProductRequest,
   ListProductsParams,
+  // Inventory
+  GhatelineInventory,
+  GhatelineInventoryImage,
+  CreateInventoryRequest,
+  CreateInventoryApiResponse,
+  ListInventoriesParams,
+  // Storage
+  GhatelineStorage,
+  GhatelineStorageProduct,
+  ListStoragesParams,
+  ListStorageProductsParams,
   // Error
   GhatelineValidationError,
 } from './types';

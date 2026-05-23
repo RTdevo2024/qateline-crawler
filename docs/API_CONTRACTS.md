@@ -482,6 +482,14 @@ status?:   "publish"|"draft"
 
 لیست موجودی‌های یک محصول.
 
+**Path Parameter:** `product_uuid` — UUID محصول
+
+**Query Parameters:**
+```
+page?:     number — شماره صفحه
+per_page?: number (1–100)
+```
+
 **Response 200:**
 ```json
 {
@@ -490,13 +498,22 @@ status?:   "publish"|"draft"
       "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
       "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
       "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-      "quantity": 10,
-      "price": 150000,
-      "status": "available"
+      "user_id": 42,
+      "price": 450000,
+      "discount_price": 400000,
+      "count": 10,
+      "original": true,
+      "weight": 350,
+      "variables": { "رنگ": "مشکی" },
+      "created_at": "2026-05-23T10:00:00Z",
+      "updated_at": "2026-05-23T10:00:00Z"
     }
-  ]
+  ],
+  "meta": { "current_page": 1, "per_page": 20, "total": 1, "last_page": 1 }
 }
 ```
+
+**TypeScript:** `InventoriesApi.listByProduct(productUuid, params?)` → `PaginatedResponse<GhatelineInventory>`
 
 ---
 
@@ -504,18 +521,26 @@ status?:   "publish"|"draft"
 
 جزئیات یک موجودی خاص.
 
+**Path Parameter:** `inventory_uuid` — UUID موجودی
+
 **Response 200:**
 ```json
 {
-  "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-  "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-  "quantity": 10,
-  "price": 150000,
-  "status": "available",
-  "created_at": "2026-05-23T10:00:00Z"
+  "data": {
+    "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+    "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
+    "user_id": 42,
+    "price": 450000,
+    "count": 10,
+    "original": true,
+    "created_at": "2026-05-23T10:00:00Z",
+    "updated_at": "2026-05-23T10:00:00Z"
+  }
 }
 ```
+
+**TypeScript:** `InventoriesApi.get(inventoryUuid)` → `GhatelineInventory`
 
 ---
 
@@ -526,41 +551,80 @@ status?:   "publish"|"draft"
 **Path Parameter:**
 - `product_uuid`: UUID محصولی که موجودی برایش ایجاد می‌شود
 
-**Request Body:**
+**Request Body — فیلدهای کامل:**
+
+| فیلد | نوع | اجباری | توضیح |
+|------|-----|--------|-------|
+| `user_id` | integer | ✅ | از `parseInt(GHATELINE_ADMIN_USER_ID)` |
+| `storage_uuid` | string (UUID) | ✅ | از `GHATELINE_DEFAULT_STORAGE_UUID` |
+| `price` | integer | ✅ | قیمت فروش — ریال |
+| `count` | integer | ✅ | تعداد موجودی |
+| `variables` | object | — | variants انتخابی `{ "رنگ": "مشکی" }` — باید با price_model محصول مطابقت داشته باشد |
+| `discount_price` | integer | — | قیمت با تخفیف — ریال |
+| `discount_expire` | string | — | تاریخ انقضا تخفیف — فرمت `Y/m/d` (مثال: `1403/9/15`) |
+| `discount_tree` | integer[] | — | آرایه‌ای از id های درخت تخفیف |
+| `min_sale` | integer | — | حداقل تعداد در هر سفارش |
+| `max_sale` | integer | — | حداکثر تعداد در هر سفارش |
+| `original` | boolean | — | آیا محصول اصل است |
+| `used` | boolean | — | آیا محصول دست دوم است |
+| `weight` | integer | — | وزن — گرم |
+| `purchase_price` | integer | — | قیمت خرید (هزینه تمام‌شده) — ریال |
+| `image` | object | — | `{ url: string, alt?: string }` |
+| `send_time` | string | — | زمان ارسال |
+
+**مثال Request Body:**
 ```json
 {
-  "storage_uuid": "<GHATELINE_DEFAULT_STORAGE_UUID>",
-  "quantity": 1,
-  "price": 150000,
-  "status": "available"
-}
-```
-
-**فیلدهای اجباری:**
-- `storage_uuid`: UUID انبار (از `GHATELINE_DEFAULT_STORAGE_UUID` استفاده کنید)
-- `quantity`: number (حداقل 1)
-- `price`: number (ریال)
-
-**فیلدهای اختیاری:**
-- `status`: `"available" | "unavailable"` (default: `"available"`)
-
-**Response 201:**
-```json
-{
-  "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-  "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "user_id": 42,
   "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-  "quantity": 1,
-  "price": 150000,
-  "status": "available"
+  "price": 450000,
+  "count": 10,
+  "original": true,
+  "weight": 350,
+  "discount_price": 400000,
+  "discount_expire": "1403/9/30"
 }
 ```
+
+**مثال با variables (محصول دارای variant):**
+```json
+{
+  "user_id": 42,
+  "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
+  "price": 450000,
+  "count": 5,
+  "variables": {
+    "رنگ": "مشکی",
+    "سایز": "XL"
+  }
+}
+```
+
+**Response 200/201:**
+```json
+{
+  "success": true,
+  "message": "موجودی با موفقیت ایجاد شد",
+  "inventory_uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "code": 0
+}
+```
+
+> ⚠️ فیلد برگشتی `inventory_uuid` است نه `uuid`
+
+**TypeScript:** `InventoriesApi.create(productUuid, data)` → `{ inventory_uuid: string }`
 
 ---
 
 ### `GET /api/v1/storages`
 
 لیست انبارهای موجود.
+
+**Query Parameters:**
+```
+page?:     number
+per_page?: number (1–100)
+```
 
 **Response 200:**
 ```json
@@ -569,11 +633,15 @@ status?:   "publish"|"draft"
     {
       "uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
       "name": "انبار اصلی",
-      "status": "active"
+      "status": "active",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
     }
   ]
 }
 ```
+
+**TypeScript:** `StoragesApi.list(params?)` → `PaginatedResponse<GhatelineStorage>`
 
 ---
 
@@ -581,18 +649,28 @@ status?:   "publish"|"draft"
 
 لیست محصولات موجود در یک انبار.
 
+**Path Parameter:** `storage_uuid` — UUID انبار
+
+**Query Parameters:**
+```
+page?:     number
+per_page?: number (1–100)
+```
+
 **Response 200:**
 ```json
 {
   "data": [
     {
       "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "title": "عنوان محصول",
+      "title": "فیلتر روغن بوش پراید ۱۳۱",
       "quantity": 10
     }
   ]
 }
 ```
+
+**TypeScript:** `StoragesApi.listProducts(storageUuid, params?)` → `PaginatedResponse<GhatelineStorageProduct>`
 
 ---
 
