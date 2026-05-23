@@ -73,10 +73,17 @@ brew services start postgresql@16
 brew services start redis
 ```
 
-### ۴. اجرای migration‌ها
+### ۴. اجرای migration‌ها و seed
 
 ```bash
-npx prisma migrate dev
+# اولین migration (ساخت جداول)
+npx prisma migrate dev --name init
+
+# اجرای seed (داده‌های اولیه)
+npx prisma db seed
+
+# مشاهده دیتابیس در مرورگر (اختیاری)
+npx prisma studio
 ```
 
 ### ۵. اجرا

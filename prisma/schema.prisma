@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SourceSite {
+  id              String     @id @default(cuid())
+  name            String
+  slug            String     @unique
+  baseUrl         String
+  adapterKey      String
+  requiresBrowser Boolean    @default(false)
+  isActive        Boolean    @default(true)
+  successCount    Int        @default(0)
+  failCount       Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  crawlJobs       CrawlJob[]
+
+  @@map("source_sites")
+}
+
+model CrawlJob {
+  id           String          @id @default(cuid())
+  sourceSiteId String
+  sourceSite   SourceSite      @relation(fields: [sourceSiteId], references: [id])
+  inputUrls    Json
+  status       CrawlJobStatus  @default(PENDING)
+  total        Int             @default(0)
+  succeeded    Int             @default(0)
+  failed       Int             @default(0)
+  createdBy    String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  products     CrawledProduct[]
+
+  @@map("crawl_jobs")
+}
+
+enum CrawlJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model CrawledProduct {
+  id                     String               @id @default(cuid())
+  crawlJobId             String
+  crawlJob               CrawlJob             @relation(fields: [crawlJobId], references: [id])
+  sourceUrl              String
+  rawData                Json?
+  processedData          Json?
+  finalData              Json?
+  status                 CrawledProductStatus @default(RAW)
+  ghatelineProductUuid   String?
+  ghatelineInventoryUuid String?
+  errorMessage           String?
+  reviewedBy             String?
+  rawAt                  DateTime?
+  processedAt            DateTime?
+  reviewedAt             DateTime?
+  publishedAt            DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@map("crawled_products")
+}
+
+enum CrawledProductStatus {
+  RAW
+  PROCESSED
+  REVIEWED
+  PUBLISHED
+  REJECTED
+  FAILED
+}
+
+model CategoryMapping {
+  id                  String   @id @default(cuid())
+  sourceCategoryText  String
+  ghatelineCategoryId Int
+  confidence          Float    @default(1.0)
+  isManual            Boolean  @default(false)
+  usageCount          Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([sourceCategoryText])
+  @@map("category_mappings")
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     LogLevel
+  scope     String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([level, createdAt])
+  @@index([scope, createdAt])
+  @@map("system_logs")
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}

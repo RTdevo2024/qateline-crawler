@@ -28,7 +28,8 @@
 - [x] ساختار پوشه‌های پروژه (src/lib/crawler, ai, db, queue, workers, types, prisma)
 - [x] shadcn/ui کامپوننت‌ها: button, input, label, card, table, badge, dialog, dropdown-menu, form, select, textarea, separator, skeleton, tabs, sonner
 - [x] تایید `npm run build` بدون خطا
-- [ ] تنظیم Prisma + schema اولیه + اجرای migration (فاز 1)
+- [x] تنظیم Prisma + schema اولیه (schema.prisma، seed.ts، singleton client) — فاز 1
+- [ ] اجرای migration روی DB واقعی (`npx prisma migrate dev --name init`)
 - [ ] تنظیم Redis connection + BullMQ queue اولیه (فاز 1)
 
 **بلاک‌ها:** هیچ
@@ -108,7 +109,8 @@
 |-------|-----|-----|-------|
 | 2026-05-23 | 0 | مستندات | ایجاد docs/ با فایل‌های پایه |
 | 2026-05-23 | 0 | setup | Next.js 14، dependencies، shadcn/ui، ساختار پوشه‌ها، TypeScript strict |
+| 2026-05-23 | 1 | prisma | schema.prisma (6 model، 3 enum)، seed.ts، singleton client، package.json prisma.seed |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23*
+*آخرین به‌روزرسانی: 2026-05-23 — تسک 0.5 کامل شد*
