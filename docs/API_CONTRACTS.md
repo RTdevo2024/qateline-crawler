@@ -514,45 +514,72 @@ per_page?: number
 
 ---
 
-## API کلود (Anthropic)
+## API هوش مصنوعی (OpenAI GPT-4o)
 
-**SDK:** `@anthropic-ai/sdk`
-**Model:** `claude-sonnet-4-6` (پیش‌فرض)
+**SDK:** `openai`
+**Model:** `gpt-4o` (پیش‌فرض، قابل تغییر با `OPENAI_MODEL`)
+**Auth:** `OPENAI_API_KEY`
 
-### پردازش توضیحات محصول
+**مزیت کلیدی:** استفاده از `response_format: { type: "json_object" }` — OpenAI تضمین می‌کند خروجی همیشه JSON معتبر باشد.
 
+### پردازش محصول — `AIProcessor.processProduct`
+
+**ورودی:** `CrawledProductData` + `categoriesList: string[]`
+
+**تنظیمات API:**
 ```typescript
-const response = await anthropic.messages.create({
-  model: "claude-sonnet-4-6",
-  max_tokens: 1024,
+openaiClient.chat.completions.create({
+  model: "gpt-4o",
+  response_format: { type: "json_object" },
+  max_tokens: 2048,
+  stream: false,
   messages: [
-    {
-      role: "user",
-      content: `محصول زیر را از یک سایت فروشگاهی ایرانی کرال کرده‌ایم.
-      
-عنوان خام: ${rawTitle}
-توضیحات خام: ${rawDescription}
-قیمت: ${price} تومان
-مشخصات: ${JSON.stringify(attributes)}
-
-لطفاً خروجی JSON با این فیلدها برگردان:
-- title: عنوان بهینه‌شده فارسی (حداکثر ۱۰۰ کاراکتر)
-- description: توضیحات حرفه‌ای فارسی (۲۰۰-۵۰۰ کاراکتر)
-- category: دسته‌بندی پیشنهادی
-- keywords: آرایه ۵ کلیدواژه فارسی`
-    }
-  ]
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ],
 });
 ```
 
-**خروجی انتظاری:**
+**خروجی validate‌شده (`AIProcessingOutput`):**
 ```json
 {
-  "title": "کابل شارژ سریع USB-C سامسونگ ۶۵W",
-  "description": "کابل اورجینال سامسونگ با قابلیت شارژ سریع ۶۵ واتی...",
-  "category": "کابل و شارژر",
-  "keywords": ["کابل usb-c", "شارژ سریع", "سامسونگ", "تایپ سی", "65w"]
+  "title": "عنوان فارسی ۶۰-۸۰ کاراکتر SEO-friendly",
+  "description": "<p>توضیحات HTML کامل فارسی...</p><ul><li>ویژگی</li></ul>",
+  "category": "لوازم جانبی خودرو",
+  "attrs": [
+    { "key": "رنگ", "value": "مشکی" },
+    { "key": "گارانتی", "value": "۱۸ ماهه" }
+  ],
+  "title_en": "Samsung 65W USB-C Fast Charging Cable",
+  "slug": "کابل-شارژ-سریع-usb-c-سامسونگ",
+  "seo_title": "کابل شارژ سریع سامسونگ USB-C 65W",
+  "seo_description": "خرید کابل شارژ سریع ۶۵ واتی سامسونگ USB-C با گارانتی اصالت کالا..."
 }
+```
+
+**مکانیزم retry:**
+- اگر Zod validation شکست خورد، یک بار retry با پیام تصحیح انجام می‌شود
+- اگر retry هم شکست خورد، `AIProcessingError` throw می‌شود
+
+**Container نهایی در DB (`processedData`):**
+```json
+{
+  "output": { ...AIProcessingOutput... },
+  "meta": {
+    "model": "gpt-4o",
+    "inputTokens": 850,
+    "outputTokens": 1200,
+    "durationMs": 4500,
+    "processedAt": "2026-05-23T10:30:00.000Z"
+  }
+}
+```
+
+**تست CLI:**
+```bash
+npx tsx scripts/test-ai.ts ./sample-product.json
+# یا با دسته‌بندی‌های سفارشی:
+npx tsx scripts/test-ai.ts ./sample-product.json "لوازم جانبی,ابزار,قطعات"
 ```
 
 ---

@@ -9,7 +9,8 @@
     "lint": "next lint",
     "worker": "tsx src/workers/index.ts",
     "test:crawl": "tsx scripts/test-crawl.ts",
-    "test:adapters": "node --import tsx/esm --test src/lib/crawler/adapters/__tests__/yadakmarket.test.ts"
+    "test:adapters": "node --import tsx/esm --test src/lib/crawler/adapters/__tests__/yadakmarket.test.ts",
+    "test:ai": "tsx scripts/test-ai.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -36,6 +37,7 @@
     "lucide-react": "^1.16.0",
     "next": "14.2.35",
     "next-themes": "^0.4.6",
+    "openai": "^6.39.0",
     "playwright": "^1.60.0",
     "react": "^18",
     "react-dom": "^18",

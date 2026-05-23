@@ -1,131 +1,79 @@
 /**
- * ai.ts — تایپ‌های پردازش هوش مصنوعی (Claude API)
+ * ai.ts — تایپ‌های پردازش هوش مصنوعی (OpenAI GPT-4o)
  *
- * Claude AI داده خام کرالر را می‌گیرد، بهینه می‌کند و خروجی آماده‌ای
+ * OpenAI داده خام کرالر را می‌گیرد، بهینه می‌کند و خروجی آماده‌ای
  * برای انتشار در قطعه‌لاین تولید می‌کند.
  *
  * جریان داده:
  *   CrawledProductData (از crawler.ts)
- *       ↓ تبدیل به AIProcessingInput
- *   Claude API (claude-sonnet-4-6)
+ *       ↓ تبدیل به prompt
+ *   OpenAI GPT-4o (response_format: json_object)
  *       ↓ parse و validate با AIProcessingOutputSchema
  *   AIProcessingOutput
  *       ↓ ذخیره به همراه AIProcessingMeta در DB.processedData
  *   ProcessedProductData (container کامل processedData)
- *
- * چرا Zod schema برای خروجی AI؟
- *   Claude ممکن است JSON ناقص یا فیلد اضافه برگرداند.
- *   schema از ورود داده نادرست به مراحل بعدی جلوگیری می‌کند.
  */
 
 import { z } from 'zod';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Input
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * AIProcessingInput — داده‌ای که به Claude ارسال می‌شود.
- *
- * این interface داده خام کرالر (CrawledProductData) را به فرمتی تبدیل
- * می‌کند که برای ساخت prompt مناسب است.
- * تبدیل CrawledProductData → AIProcessingInput در ai.worker انجام می‌شود.
- */
-export interface AIProcessingInput {
-  /** عنوان خام از سایت — همانطور که کرالر استخراج کرده، بدون ویرایش */
-  rawTitle: string;
-  /**
-   * توضیحات خام از سایت — ممکن است HTML tag داشته باشد.
-   * Claude باید آن را به متن ساده تبدیل و بهینه کند.
-   */
-  rawDescription?: string;
-  /** قیمت به ریال — برای context درست به Claude کمک می‌کند */
-  price: number;
-  /** مشخصات فنی خام از سایت (کلید-مقدار فارسی) */
-  attributes: Record<string, string>;
-  /** تعداد تصاویر موجود — Claude نمی‌تواند تصویر ببیند اما تعداد را می‌داند */
-  imageCount: number;
-  /** URL صفحه کرال‌شده — برای reference و context */
-  sourceUrl: string;
-  /** slug سایت مبدأ — Claude می‌داند از کجا آمده (مثال: 'digikala') */
-  sourceSite: string;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Output Schema & Type
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * AIProcessingOutputSchema — Zod schema برای validate کردن JSON خروجی Claude.
+ * AIProcessingOutputSchema — Zod schema برای validate کردن JSON خروجی GPT-4o.
  *
- * Claude با دستورالعمل prompt یک JSON برمی‌گرداند.
- * این schema تضمین می‌کند تمام فیلدهای لازم حضور دارند و مقادیر معتبرند.
- *
- * اگر Claude خروجی نامعتبر داد:
- *   - safeParse fail می‌کند
- *   - محصول با status FAILED در DB ذخیره می‌شود
- *   - جزئیات خطا در errorMessage ثبت می‌شود
+ * از response_format: json_object استفاده می‌شود — OpenAI تضمین JSON معتبر می‌دهد.
+ * این schema فقط ساختار و مقادیر فیلدها را تأیید می‌کند.
  */
 export const AIProcessingOutputSchema = z.object({
   /**
-   * عنوان بازنویسی‌شده فارسی.
-   * Claude باید: واضح، کوتاه، SEO-friendly و بدون اطلاعات اضافه بنویسد.
-   * محدودیت: حداقل ۵، حداکثر ۱۰۰ کاراکتر.
-   * مثال: 'کابل شارژ سریع ۶۵ واتی USB-C سامسونگ'
+   * عنوان بازنویسی‌شده فارسی — SEO-friendly.
+   * هدف: 60-80 کاراکتر (prompt)، validate: min 20 برای انعطاف.
    */
-  title: z.string().min(5).max(100),
+  title: z.string().min(20).max(120),
 
   /**
-   * توضیحات بهینه‌شده فارسی.
-   * Claude باید: حرفه‌ای، کامل و جذاب برای خریدار بنویسد.
-   * نباید HTML داشته باشد — متن ساده.
-   * محدودیت: حداقل ۵۰، حداکثر ۱۰۰۰ کاراکتر.
+   * توضیحات کامل فارسی — HTML با تگ‌های p، ul، li، h3.
+   * هدف: 300-500 کلمه. در HTML این معادل ~2000-4000 کاراکتر است.
    */
-  description: z.string().min(50).max(1000),
+  description: z.string().min(200),
 
   /**
-   * پیشنهاد دسته‌بندی برای قطعه‌لاین.
-   * Claude لیست دسته‌بندی‌های قطعه‌لاین را نمی‌داند پس فقط hint می‌دهد.
-   * mapping نهایی در CategoryMapping جدول انجام می‌شود.
-   * مثال: 'کابل و شارژر'، 'لوازم جانبی خودرو'
+   * دسته‌بندی پیشنهادی از لیست دسته‌بندی‌های فروشگاه.
+   * اگر هیچ دسته‌بندی مناسبی یافت نشد می‌تواند undefined باشد.
    */
-  categoryHint: z.string().optional(),
+  category: z.string().optional(),
 
   /**
-   * کلیدواژه‌های فارسی برای جستجوی داخلی فروشگاه.
-   * همه به صورت lowercase و بدون علائم نگارشی.
-   * حداقل ۳، حداکثر ۱۰ کلیدواژه.
+   * ویژگی‌های برجسته محصول — آرایه‌ای از کلید-مقدار.
+   * مثال: [{ key: "رنگ", value: "مشکی" }, { key: "گارانتی", value: "۱۸ ماهه" }]
    */
-  keywords: z.array(z.string().min(1)).min(3).max(10),
+  attrs: z.array(
+    z.object({
+      key: z.string().min(1),
+      value: z.string().min(1),
+    })
+  ),
+
+  /** عنوان انگلیسی محصول — برای SEO بین‌المللی */
+  title_en: z.string().optional(),
 
   /**
-   * مشخصات فنی پاکسازی‌شده و استانداردشده.
-   * Claude باید: موارد تکراری را حذف، کلیدها را یکنواخت کند.
-   * اگر مشخصاتی قابل استانداردسازی نبود می‌تواند undefined باشد.
+   * slug فارسی URL-safe.
+   * مثال: 'کابل-شارژ-سریع-usb-c-سامسونگ'
+   * باید فقط حروف فارسی، انگلیسی، اعداد و خط تیره داشته باشد.
    */
-  attributes: z.record(z.string(), z.string()).optional(),
+  slug: z.string().optional(),
 
-  /**
-   * برند استخراج‌شده یا تایید‌شده توسط Claude.
-   * اگر در عنوان یا مشخصات برند مشخص بود اینجا می‌گذارد.
-   * مثال: 'سامسونگ'، 'بوش'، 'ACDelco'
-   */
-  brand: z.string().optional(),
+  /** عنوان SEO — 50-60 کاراکتر */
+  seo_title: z.string().optional(),
 
-  /**
-   * سطح اطمینان Claude از کیفیت خروجی — ۰ تا ۱.
-   * < 0.5 : داده خام کم بود، خروجی ممکن است نادرست باشد
-   * 0.5–0.8 : خروجی معقول است اما review توصیه می‌شود
-   * > 0.8 : خروجی با اطمینان بالا
-   */
-  confidence: z.number().min(0).max(1),
+  /** توضیحات متا SEO — 120-160 کاراکتر */
+  seo_description: z.string().optional(),
 });
 
-/**
- * AIProcessingOutput — نوع TypeScript مستقیم از Zod schema.
- *
- * خروجی تایید‌شده Claude که در DB.processedData ذخیره می‌شود.
- */
+/** نوع TypeScript مستقیم از Zod schema */
 export type AIProcessingOutput = z.infer<typeof AIProcessingOutputSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,18 +83,15 @@ export type AIProcessingOutput = z.infer<typeof AIProcessingOutputSchema>;
 /**
  * AIProcessingMeta — اطلاعات metadata پردازش AI.
  *
- * این اطلاعات در کنار خروجی اصلی ذخیره می‌شوند و برای:
- *   - محاسبه هزینه API (inputTokens + outputTokens)
- *   - بررسی performance (durationMs)
- *   - امکان reprocess با model جدیدتر (model field)
- * استفاده می‌شوند.
+ * برای محاسبه هزینه API (inputTokens + outputTokens)،
+ * بررسی performance (durationMs) و امکان reprocess با model جدیدتر.
  */
 export interface AIProcessingMeta {
-  /** model Claude استفاده‌شده — مثال: 'claude-sonnet-4-6' */
+  /** model OpenAI استفاده‌شده — مثال: 'gpt-4o' */
   model: string;
-  /** تعداد input tokens مصرفی (داده ارسال‌شده به Claude) */
+  /** تعداد input tokens مصرفی */
   inputTokens: number;
-  /** تعداد output tokens مصرفی (پاسخ Claude) */
+  /** تعداد output tokens مصرفی */
   outputTokens: number;
   /** زمان کل پردازش از ارسال تا دریافت پاسخ — میلی‌ثانیه */
   durationMs: number;
@@ -159,11 +104,9 @@ export interface AIProcessingMeta {
  *
  * جدول crawled_products فیلد processedData: jsonb دارد.
  * این interface دقیقاً ساختار آن JSON را تعریف می‌کند.
- *
- * ترکیب خروجی Claude + metadata پردازش در یک object.
  */
 export interface ProcessedProductData {
-  /** خروجی تایید‌شده Claude */
+  /** خروجی تایید‌شده GPT-4o */
   output: AIProcessingOutput;
   /** اطلاعات متا پردازش — برای billing، debug و monitoring */
   meta: AIProcessingMeta;

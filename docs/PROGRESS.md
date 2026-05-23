@@ -65,8 +65,13 @@
 
 **پیش‌نیاز:** اتمام کامل فاز 1
 
-- [ ] کلاینت Anthropic SDK (`src/lib/ai/claude.ts`)
-- [ ] Prompt طراحی برای بهینه‌سازی عنوان/توضیحات فارسی
+- [x] OpenAI GPT-4o client (`src/lib/ai/client.ts`) — singleton، DEFAULT_MODEL از env
+- [x] Prompt template (`src/lib/ai/prompts.ts`) — buildProductProcessingPrompt با system+user prompt فارسی
+- [x] AIProcessor (`src/lib/ai/processor.ts`) — json_object، Zod validation، retry با پیام تصحیح
+- [x] src/lib/ai/index.ts — export های راحت
+- [x] scripts/test-ai.ts — CLI تست با JSON ورودی
+- [x] src/types/ai.ts — schema جدید با فیلدهای OpenAI (title, description HTML, category, attrs, title_en, slug, seo_title, seo_description)
+- [x] npm install openai + OPENAI_API_KEY در .env.example + npm run test:ai script
 - [ ] کلاینت API قطعه‌لاین (`src/lib/ghateline/client.ts`)
 - [ ] BullMQ `publish.worker` برای آپلود به قطعه‌لاین
 - [ ] تست دستی: کرال + پردازش + آپلود یک محصول کامل
@@ -117,6 +122,7 @@
 | 2026-05-23 | 1 | types | src/types/common.ts، crawler.ts، ghateline.ts، ai.ts و src/lib/crawler/schema.ts — tsc پاک |
 | 2026-05-23 | 1 | crawler-core | fetchers/types.ts، http-fetcher.ts، browser-fetcher.ts، core/errors.ts، base-adapter.ts، adapter-registry.ts، crawler.ts — tsc پاک |
 | 2026-05-23 | 1 | yadak-adapter | adapters/yadakmarket.ts، adapters/index.ts، __tests__/yadakmarket.test.ts (17/17)، scripts/test-crawl.ts — tsc پاک |
+| 2026-05-23 | 2 | ai-processor | src/lib/ai/{client,prompts,processor,index}.ts، scripts/test-ai.ts، types/ai.ts schema جدید — openai نصب، tsc پاک |
 
 ---
 
