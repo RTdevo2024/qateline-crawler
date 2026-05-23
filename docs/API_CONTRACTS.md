@@ -215,49 +215,61 @@ limit?: number (default: 20)
 
 ## API قطعه‌لاین
 
-**Base URL:** `https://ghateline.com`
+**Base URL:** `https://ghateline.com` (از `GHATELINE_API_BASE_URL` خوانده می‌شود)
 **Auth Header:** `X-API-KEY: <GHATELINE_API_KEY>`
 **Content-Type:** `application/json`
 
-> مستندات تفصیلی هر endpoint در ادامه اضافه می‌شود.
+> پیاده‌سازی کلاینت: `src/lib/ghateline/`
+> Types کامل: `src/lib/ghateline/types.ts`
 
 ---
 
 ### `GET /api/v1/products`
 
-لیست محصولات فروشگاه.
-
-**Headers:**
-```
-X-API-KEY: <api_key>
-```
+لیست محصولات با pagination.
 
 **Query Parameters:**
 ```
-page?: number
-per_page?: number
+page?:     number          — شماره صفحه (از ۱)
+per_page?: number (1–100) — تعداد در هر صفحه
+status?:   "publish"|"draft"
 ```
 
 **Response 200:**
 ```json
 {
+  "success": true,
   "data": [
     {
       "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "title": "عنوان محصول",
-      "description": "توضیحات محصول",
-      "price": 150000,
-      "status": "active",
-      "created_at": "2026-05-23T10:00:00Z"
+      "user_id": 42,
+      "category_id": 7,
+      "title": "فیلتر روغن سامسونگ",
+      "brand": "سامسونگ",
+      "title_en": "Samsung Oil Filter",
+      "slug": "filter-roghan-samsung",
+      "status": "publish",
+      "attrs": [
+        { "key": "جنس", "value": "فلز" },
+        { "key": "گارانتی", "value": "۶ ماهه" }
+      ],
+      "images": [
+        { "url": "https://cdn.example.com/img1.jpg", "is_main": true }
+      ],
+      "created_at": "2026-05-23T10:00:00Z",
+      "updated_at": "2026-05-23T10:00:00Z"
     }
   ],
   "meta": {
     "current_page": 1,
     "per_page": 20,
-    "total": 150
+    "total": 150,
+    "last_page": 8
   }
 }
 ```
+
+**TypeScript:** `ProductsApi.list(params?)` → `PaginatedResponse<GhatelineProduct>`
 
 ---
 
@@ -265,119 +277,204 @@ per_page?: number
 
 جزئیات کامل یک محصول.
 
-**Path Parameter:**
-- `uuid`: شناسه یکتای محصول در قطعه‌لاین
+**Path Parameter:** `uuid` — UUID v4 محصول
 
 **Response 200:**
 ```json
 {
-  "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "title": "عنوان محصول",
-  "description": "توضیحات کامل",
-  "price": 150000,
-  "status": "active",
-  "images": [],
-  "attributes": {},
-  "created_at": "2026-05-23T10:00:00Z",
-  "updated_at": "2026-05-23T10:00:00Z"
+  "success": true,
+  "data": {
+    "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "user_id": 42,
+    "category_id": 7,
+    "title": "فیلتر روغن سامسونگ",
+    "brand": "سامسونگ",
+    "title_en": "Samsung Oil Filter",
+    "slug": "filter-roghan-samsung",
+    "content": "<p>توضیحات کامل...</p>",
+    "warnings": "<p>هشدارها...</p>",
+    "guide": "<p>راهنمای استفاده...</p>",
+    "tabs": [
+      { "title": "مشخصات", "content": "<p>...</p>", "sort": 1 }
+    ],
+    "attrs": [
+      { "key": "جنس", "value": "فلز" }
+    ],
+    "images": [
+      {
+        "url": "https://cdn.example.com/img1.jpg",
+        "alt": "تصویر اصلی",
+        "is_main": true,
+        "sort": 1
+      }
+    ],
+    "videos": {
+      "main": "https://cdn.example.com/video.mp4"
+    },
+    "price_model": [
+      {
+        "title": "استاندارد",
+        "price": 150000,
+        "compare_price": 180000,
+        "in_stock": true,
+        "quantity": 10
+      }
+    ],
+    "commission": 5,
+    "in_stock_status": true,
+    "seo_title": "فیلتر روغن سامسونگ | قطعه‌لاین",
+    "seo_description": "خرید فیلتر روغن سامسونگ با بهترین قیمت",
+    "is_vip": false,
+    "comment_status": true,
+    "question_status": true,
+    "status": "publish",
+    "sub_categories": [12, 15],
+    "created_at": "2026-05-23T10:00:00Z",
+    "updated_at": "2026-05-23T10:00:00Z"
+  }
 }
 ```
 
 **Response 404:**
 ```json
-{
-  "message": "Product not found"
-}
+{ "success": false, "message": "Product not found", "code": 404 }
 ```
+
+**TypeScript:** `ProductsApi.get(uuid)` → `GhatelineProduct`
 
 ---
 
 ### `POST /api/v1/products/create`
 
-ایجاد محصول جدید در فروشگاه.
+ایجاد محصول جدید.
 
-**Request Body:**
+**Request Body — فیلدهای کامل:**
+
+| فیلد | نوع | اجباری | توضیح |
+|------|-----|--------|-------|
+| `user_id` | integer | ✅ | از `parseInt(GHATELINE_ADMIN_USER_ID)` |
+| `category_id` | integer | ✅ | شناسه دسته‌بندی اصلی |
+| `title` | string | ✅ | عنوان فارسی |
+| `brand` | string | — | نام برند |
+| `title_en` | string | — | عنوان انگلیسی |
+| `slug` | string | — | URL slug |
+| `content` | string | — | توضیحات کامل (HTML) |
+| `warnings` | string | — | هشدارها (HTML) |
+| `guide` | string | — | راهنما (HTML) |
+| `tabs` | array | — | تب‌های محتوا `[{title, content, sort?}]` |
+| `attrs` | array | — | مشخصات فنی `[{key, value}]` |
+| `images` | array | — | تصاویر `[{url, alt?, is_main?, sort?}]` |
+| `videos` | object | — | `{main?: url, preview?: url}` |
+| `model_3d` | url | — | آدرس مدل سه‌بعدی |
+| `price_model` | array | — | `[{title, price, compare_price?, in_stock?, quantity?}]` |
+| `commission` | integer | — | درصد پورسانت (0–100) |
+| `in_stock_status` | boolean | — | وضعیت کلی موجودی |
+| `inquiry_options` | object | — | `{enabled?, phone?, message?}` |
+| `seo_title` | string | — | عنوان SEO |
+| `seo_description` | string | — | توضیحات SEO |
+| `seo_canonical` | url | — | canonical URL |
+| `is_vip` | boolean | — | محصول VIP |
+| `comment_status` | boolean | — | فعال بودن نظرات |
+| `question_status` | boolean | — | فعال بودن سوال و جواب |
+| `status` | `"publish"\|"draft"` | — | پیش‌فرض: `"draft"` |
+| `sub_categories` | integer[] | — | دسته‌بندی‌های فرعی |
+| `uuid` | string (UUID) | — | برای ایجاد idempotent |
+
+**مثال Request Body (حداقل فیلدها):**
 ```json
 {
-  "title": "عنوان محصول",
-  "description": "توضیحات کامل محصول",
-  "price": 150000,
-  "user_id": "<GHATELINE_ADMIN_USER_ID>",
-  "status": "draft",
-  "attributes": {
-    "brand": "سامسونگ",
-    "model": "EP-TA800"
-  }
+  "user_id": 42,
+  "category_id": 7,
+  "title": "فیلتر روغن سامسونگ",
+  "brand": "سامسونگ",
+  "content": "<p>توضیحات کامل محصول</p>",
+  "attrs": [
+    { "key": "جنس", "value": "فلز" },
+    { "key": "گارانتی", "value": "۶ ماهه" }
+  ],
+  "images": [
+    { "url": "https://cdn.example.com/img1.jpg", "is_main": true }
+  ],
+  "price_model": [
+    { "title": "استاندارد", "price": 150000, "in_stock": true }
+  ],
+  "status": "draft"
 }
 ```
 
-**فیلدهای اجباری:**
-- `title`: string
-- `price`: number (ریال)
-- `user_id`: UUID کاربر admin
-
-**فیلدهای اختیاری:**
-- `description`: string
-- `status`: `"draft" | "active" | "inactive"` (default: `"draft"`)
-- `attributes`: object (key-value مشخصات فنی)
-
-**Response 201:**
+**Response 200/201:**
 ```json
 {
-  "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "title": "عنوان محصول",
-  "status": "draft",
-  "created_at": "2026-05-23T10:00:00Z"
+  "success": true,
+  "message": "محصول با موفقیت ایجاد شد",
+  "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "code": 0
 }
 ```
+
+> ⚠️ فیلد برگشتی `product_uuid` است نه `uuid`
 
 **Response 422:**
 ```json
 {
+  "success": false,
   "message": "The given data was invalid.",
   "errors": {
-    "title": ["The title field is required."]
+    "title": ["The title field is required."],
+    "user_id": ["The user id field must be an integer."]
   }
 }
 ```
+
+**TypeScript:** `ProductsApi.create(data)` → `{ product_uuid: string }`
 
 ---
 
 ### `PUT /api/v1/products/{uuid}`
 
-ویرایش اطلاعات محصول.
+ویرایش جزئی یا کامل یک محصول.
 
-**Request Body:** (همان فیلدهای create، همه اختیاری)
+**Path Parameter:** `uuid` — UUID v4 محصول
+
+**Request Body:** هر subset از فیلدهای `CreateProductRequest` (همه اختیاری)
+
 ```json
 {
-  "title": "عنوان جدید",
-  "description": "توضیحات جدید",
-  "status": "active"
+  "title": "عنوان ویرایش‌شده",
+  "status": "publish",
+  "attrs": [
+    { "key": "جنس", "value": "آلومینیوم" }
+  ]
 }
 ```
 
 **Response 200:**
 ```json
 {
-  "uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "title": "عنوان جدید",
-  "status": "active",
-  "updated_at": "2026-05-23T11:00:00Z"
+  "success": true,
+  "message": "محصول با موفقیت ویرایش شد"
 }
 ```
+
+**TypeScript:** `ProductsApi.update(uuid, data)` → `void`
 
 ---
 
 ### `DELETE /api/v1/products/{uuid}`
 
-حذف محصول.
+حذف دائمی یک محصول.
+
+**Path Parameter:** `uuid` — UUID v4 محصول
 
 **Response 200:**
 ```json
 {
-  "message": "Product deleted successfully"
+  "success": true,
+  "message": "محصول با موفقیت حذف شد"
 }
 ```
+
+**TypeScript:** `ProductsApi.delete(uuid)` → `void`
 
 ---
 

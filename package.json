@@ -10,7 +10,8 @@
     "worker": "tsx src/workers/index.ts",
     "test:crawl": "tsx scripts/test-crawl.ts",
     "test:adapters": "node --import tsx/esm --test src/lib/crawler/adapters/__tests__/yadakmarket.test.ts",
-    "test:ai": "tsx scripts/test-ai.ts"
+    "test:ai": "tsx scripts/test-ai.ts",
+    "test:ghateline": "tsx scripts/test-ghateline-products.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
