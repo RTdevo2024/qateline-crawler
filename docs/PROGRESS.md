@@ -12,7 +12,7 @@
 | 0 | راه‌اندازی | ✅ کامل | 7/7 |
 | 1 | هسته کرالر | 🔄 در حال اجرا | 3/8 |
 | 2 | AI و یکپارچه‌سازی | 🔄 در حال اجرا | 4/5 |
-| 3 | پنل مدیریت | ⏳ منتظر | 0/6 |
+| 3 | پنل مدیریت | 🔄 در حال اجرا | 1/7 |
 | 4 | تست و دیپلوی | ⏳ منتظر | 0/4 |
 
 ---
@@ -91,6 +91,17 @@
 
 **پیش‌نیاز:** اتمام کامل فاز 2
 
+- [x] API Routes پنل ادمین:
+  - [x] `src/lib/api-helpers.ts` — apiHandler + ok/created/notFound/badRequest + PaginationSchema
+  - [x] `GET /api/sites` + `POST /api/sites` — لیست و ایجاد سایت منبع
+  - [x] `GET/PUT/DELETE /api/sites/[id]` — CRUD یک سایت منبع
+  - [x] `GET /api/crawl-jobs` + `POST /api/crawl-jobs` — لیست و ایجاد crawl job
+  - [x] `GET /api/crawl-jobs/[id]` — جزئیات و آمار job
+  - [x] `GET /api/crawled-products` — لیست با pagination/فیلتر/جستجو
+  - [x] `GET/PUT/DELETE /api/crawled-products/[id]` — جزئیات + ویرایش finalData + حذف
+  - [x] `POST /api/crawled-products/[id]/approve` — تایید و enqueue publish
+  - [x] `POST /api/crawled-products/[id]/reject` — رد محصول
+  - [x] tsc پاک + npm run build پاک
 - [ ] تنظیم NextAuth.js (login/logout)
 - [ ] صفحه Dashboard: وضعیت کلی jobs
 - [ ] صفحه Jobs: لیست و جزئیات هر job
@@ -136,7 +147,8 @@
 | 2026-05-25 | 1 | anti-detection | RETRYABLE_NETWORK_ERRORS، anti-bot (webdriver، plugins، Sec-Fetch headers)، ERR_CONNECTION_TIMED_OUT رفع شد — tsc پاک |
 | 2026-05-25 | 0 | env+db | .env.local، prisma db push --skip-generate، prisma db seed — DB synced، PARTIAL enum اضافه شد |
 | 2026-05-25 | 1+2 | integration-test | تست pipeline: crawl yadakmarket موفق (rawData کامل)، AI job enqueue، AIWorker 401 (placeholder key) — pipeline کار می‌کند |
+| 2026-05-25 | 3 | api-routes | Admin Panel API Routes: sites + crawl-jobs + crawled-products (approve/reject) + api-helpers.ts + API_CONTRACTS.md کامل — tsc پاک، build پاک |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-25 — تست یکپارچه pipeline: کرال yadakmarket کامل، منتظر API key واقعی برای AI processing*
+*آخرین به‌روزرسانی: 2026-05-25 — Admin Panel API Routes (فاز 3.0) پیاده‌سازی شد*

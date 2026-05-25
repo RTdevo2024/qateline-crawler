@@ -7,207 +7,446 @@
 
 ## فهرست
 
-1. [API های داخلی (Next.js Route Handlers)](#api-های-داخلی)
+1. [API های داخلی پنل ادمین (Next.js Route Handlers)](#api-های-داخلی-پنل-ادمین)
 2. [API قطعه‌لاین (Ghateline)](#api-قطعه‌لاین)
-3. [API کلود (Anthropic)](#api-کلود)
+3. [API هوش مصنوعی](#api-هوش-مصنوعی)
 
 ---
 
-## API های داخلی
+## فرمت استاندارد پاسخ
+
+همه API های داخلی از این فرمت استفاده می‌کنند:
+
+**موفق:**
+```json
+{ "success": true, "data": <payload> }
+```
+
+**ناموفق:**
+```json
+{
+  "success": false,
+  "error": {
+    "message": "توضیح خطا",
+    "code": "ERROR_CODE",
+    "details": []
+  }
+}
+```
+
+**کدهای خطا:**
+
+| code | HTTP | توضیح |
+|------|------|-------|
+| `VALIDATION_ERROR` | 400 | ورودی نامعتبر (Zod) |
+| `BAD_REQUEST` | 400 | درخواست نادرست |
+| `NOT_FOUND` | 404 | رکورد یافت نشد |
+| `CONFLICT` | 409 | داده تکراری (unique constraint) |
+| `DUPLICATE` | 409 | مقدار تکراری (P2002) |
+| `FOREIGN_KEY_ERROR` | 400 | رکورد مرتبط یافت نشد (P2003) |
+| `INTERNAL_ERROR` | 500 | خطای داخلی سرور |
+
+---
+
+## API های داخلی پنل ادمین
 
 **Base URL (development):** `http://localhost:3000`
-**Auth:** Session cookie (NextAuth.js) — همه route های داخلی نیاز به auth دارند
+**پیاده‌سازی helper:** `src/lib/api-helpers.ts`
 
 ---
 
-### `POST /api/crawl/start`
+### Sites — مدیریت سایت‌های منبع
 
-یک job کرال جدید شروع می‌کند.
+#### `GET /api/sites`
+
+لیست همه SourceSite ها با pagination.
+
+**Query Params:**
+```
+page?  — شماره صفحه (default: 1)
+limit? — تعداد در صفحه (default: 20, max: 100)
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "clu...",
+        "name": "یدک مارکت",
+        "slug": "yadakmarket",
+        "baseUrl": "https://yadakmarket.com",
+        "adapterKey": "yadakmarket",
+        "requiresBrowser": false,
+        "isActive": true,
+        "successCount": 120,
+        "failCount": 5,
+        "createdAt": "2026-05-25T10:00:00Z",
+        "updatedAt": "2026-05-25T10:00:00Z"
+      }
+    ],
+    "pagination": { "page": 1, "limit": 20, "total": 3, "totalPages": 1 }
+  }
+}
+```
+
+---
+
+#### `POST /api/sites`
+
+ایجاد SourceSite جدید.
 
 **Request Body:**
 ```json
 {
-  "url": "https://www.digikala.com/product/dkp-12345/",
-  "type": "product",
-  "options": {
-    "processWithAI": true,
-    "autoPublish": false
+  "name": "یدک مارکت",
+  "slug": "yadakmarket",
+  "baseUrl": "https://yadakmarket.com",
+  "adapterKey": "yadakmarket",
+  "requiresBrowser": false,
+  "isActive": true
+}
+```
+
+**Validation:**
+- `name`: required, 1-100 کاراکتر
+- `slug`: required, 1-50 کاراکتر، فقط `a-z0-9-`
+- `baseUrl`: required, URL معتبر
+- `adapterKey`: required, 1-50 کاراکتر
+- `requiresBrowser`: optional, boolean, default: false
+- `isActive`: optional, boolean, default: true
+
+**Response 201:** آبجکت SourceSite ایجادشده
+
+**Response 400:** خطای validation
+
+**Response 409:** slug تکراری
+
+---
+
+#### `GET /api/sites/[id]`
+
+جزئیات یک SourceSite.
+
+**Response 200:** آبجکت SourceSite کامل
+
+**Response 404:** سایت پیدا نشد
+
+---
+
+#### `PUT /api/sites/[id]`
+
+ویرایش SourceSite. همه فیلدها اختیاری هستند.
+
+**Request Body:** زیرمجموعه‌ای از فیلدهای CreateSite
+
+**Response 200:** آبجکت SourceSite به‌روزشده
+
+---
+
+#### `DELETE /api/sites/[id]`
+
+حذف SourceSite.
+
+**Response 200:**
+```json
+{ "success": true, "data": { "deleted": true, "id": "clu..." } }
+```
+
+---
+
+### Crawl Jobs — مدیریت job های کرال
+
+#### `GET /api/crawl-jobs`
+
+لیست crawl job ها با pagination و فیلتر.
+
+**Query Params:**
+```
+page?         — شماره صفحه (default: 1)
+limit?        — تعداد در صفحه (default: 20, max: 100)
+status?       — PENDING | RUNNING | COMPLETED | FAILED | CANCELLED
+sourceSiteId? — فیلتر بر اساس سایت منبع
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "clv...",
+        "sourceSiteId": "clu...",
+        "status": "COMPLETED",
+        "total": 50,
+        "succeeded": 48,
+        "failed": 2,
+        "createdAt": "2026-05-25T10:00:00Z",
+        "updatedAt": "2026-05-25T10:05:00Z",
+        "sourceSite": { "id": "clu...", "name": "یدک مارکت", "slug": "yadakmarket" },
+        "_count": { "products": 50 }
+      }
+    ],
+    "pagination": { "page": 1, "limit": 20, "total": 5, "totalPages": 1 }
+  }
+}
+```
+
+---
+
+#### `POST /api/crawl-jobs`
+
+ایجاد crawl job جدید و enqueue کردن URL ها.
+
+**Request Body:**
+```json
+{
+  "sourceSiteId": "clu...",
+  "urls": [
+    "https://yadakmarket.com/product/1/",
+    "https://yadakmarket.com/product/2/"
+  ]
+}
+```
+
+**Validation:**
+- `sourceSiteId`: required, باید در DB وجود داشته باشد و isActive = true
+- `urls`: required, آرایه 1-500 URL معتبر
+
+**جریان داخلی:**
+1. بررسی وجود و فعال بودن SourceSite
+2. ایجاد CrawlJob با `total = urls.length` و status = PENDING
+3. ایجاد یک CrawledProduct (status = RAW) به ازای هر URL (در یک transaction)
+4. enqueue کردن هر محصول در crawlQueue
+
+**Response 201:**
+```json
+{
+  "success": true,
+  "data": {
+    "job": {
+      "id": "clv...",
+      "sourceSiteId": "clu...",
+      "status": "PENDING",
+      "total": 2,
+      "createdAt": "2026-05-25T10:00:00Z"
+    },
+    "enqueued": 2,
+    "failed": 0
+  }
+}
+```
+
+**Response 400:** sourceSiteId نامعتبر یا سایت غیرفعال
+
+---
+
+#### `GET /api/crawl-jobs/[id]`
+
+جزئیات و آمار یک crawl job.
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clv...",
+    "sourceSiteId": "clu...",
+    "inputUrls": ["https://..."],
+    "status": "COMPLETED",
+    "total": 50,
+    "succeeded": 48,
+    "failed": 2,
+    "createdAt": "2026-05-25T10:00:00Z",
+    "sourceSite": { "id": "clu...", "name": "یدک مارکت", "slug": "yadakmarket", "baseUrl": "https://yadakmarket.com" },
+    "stats": {
+      "total": 50,
+      "succeeded": 48,
+      "failed": 2,
+      "byStatus": {
+        "PUBLISHED": 40,
+        "REVIEWED": 5,
+        "PROCESSED": 3,
+        "FAILED": 2
+      }
+    }
+  }
+}
+```
+
+---
+
+### Crawled Products — مدیریت محصولات کرال‌شده
+
+#### `GET /api/crawled-products`
+
+لیست محصولات کرال‌شده با pagination و فیلتر.
+
+**Query Params:**
+```
+page?       — شماره صفحه (default: 1)
+limit?      — تعداد در صفحه (default: 20, max: 100)
+status?     — RAW | PROCESSED | REVIEWED | PUBLISHED | REJECTED | PARTIAL | FAILED
+crawlJobId? — فیلتر بر اساس job
+search?     — جستجو در عنوان (rawData.product.title یا processedData.output.title)
+```
+
+**Response 200:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "clw...",
+        "crawlJobId": "clv...",
+        "sourceUrl": "https://yadakmarket.com/product/1/",
+        "status": "PROCESSED",
+        "ghatelineProductUuid": null,
+        "ghatelineInventoryUuid": null,
+        "errorMessage": null,
+        "reviewedBy": null,
+        "rawAt": "2026-05-25T10:01:00Z",
+        "processedAt": "2026-05-25T10:02:00Z",
+        "reviewedAt": null,
+        "publishedAt": null,
+        "createdAt": "2026-05-25T10:00:00Z",
+        "updatedAt": "2026-05-25T10:02:00Z",
+        "crawlJob": {
+          "id": "clv...",
+          "sourceSite": { "id": "clu...", "name": "یدک مارکت", "slug": "yadakmarket" }
+        }
+      }
+    ],
+    "pagination": { "page": 1, "limit": 20, "total": 120, "totalPages": 6 }
+  }
+}
+```
+
+> **نکته:** `rawData`، `processedData`، و `finalData` در لیست برگردانده نمی‌شوند.
+> برای داده‌های کامل از `GET /api/crawled-products/[id]` استفاده کنید.
+
+---
+
+#### `GET /api/crawled-products/[id]`
+
+جزئیات کامل یک محصول شامل raw + processed + final data.
+
+**Response 200:** آبجکت CrawledProduct کامل با همه فیلدهای JSON
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "clw...",
+    "crawlJobId": "clv...",
+    "sourceUrl": "https://...",
+    "rawData": { "source": {...}, "product": {...}, "inventory": {...} },
+    "processedData": { "output": {...}, "meta": {...} },
+    "finalData": { "title": "عنوان نهایی", ... },
+    "status": "PROCESSED",
+    "crawlJob": {
+      "id": "clv...",
+      "status": "COMPLETED",
+      "sourceSite": { "id": "clu...", "name": "یدک مارکت", "slug": "yadakmarket", "baseUrl": "https://..." }
+    },
+    ...
+  }
+}
+```
+
+---
+
+#### `PUT /api/crawled-products/[id]`
+
+به‌روزرسانی `finalData` توسط اپراتور (ویرایش دستی قبل از تایید).
+
+**Request Body:**
+```json
+{
+  "finalData": {
+    "title": "عنوان ویرایش‌شده",
+    "price": 450000,
+    "brand": "بوش",
+    "attrs": [{ "key": "رنگ", "value": "مشکی" }]
   }
 }
 ```
 
 **Validation:**
-- `url`: required, string, باید با `https://` شروع شود
-- `type`: required, enum `"product" | "category"`
-- `options.processWithAI`: optional, boolean, default: `true`
-- `options.autoPublish`: optional, boolean, default: `false`
+- `finalData`: required, آبجکت JSON معتبر (هر شکلی)
 
-**Response 201:**
-```json
-{
-  "jobId": "cm5xyz123",
-  "status": "pending",
-  "message": "Crawl job enqueued successfully",
-  "queuePosition": 3
-}
-```
+**Response 200:** آبجکت CrawledProduct به‌روزشده
 
-**Response 400:**
-```json
-{
-  "error": "VALIDATION_ERROR",
-  "message": "Invalid URL format",
-  "field": "url"
-}
-```
+---
 
-**Response 422:**
+#### `DELETE /api/crawled-products/[id]`
+
+حذف دائمی یک محصول.
+
+**Response 200:**
 ```json
-{
-  "error": "UNSUPPORTED_SITE",
-  "message": "Site not supported: example.com",
-  "supportedSites": ["digikala.com", "torob.com"]
-}
+{ "success": true, "data": { "deleted": true, "id": "clw..." } }
 ```
 
 ---
 
-### `GET /api/jobs`
+#### `POST /api/crawled-products/[id]/approve`
 
-لیست jobs با فیلتر و pagination.
+تایید محصول توسط اپراتور — status به REVIEWED تغییر می‌کند و publish job enqueue می‌شود.
 
-**Query Parameters:**
-```
-status?: "pending" | "crawling" | "crawled" | "processing" | "processed" | "publishing" | "published" | "failed"
-page?: number (default: 1)
-limit?: number (default: 20, max: 100)
+**پیش‌نیاز:** status باید `PROCESSED` یا `PARTIAL` باشد
+
+**Request Body (اختیاری):**
+```json
+{
+  "reviewedBy": "operator@company.com"
+}
 ```
 
 **Response 200:**
 ```json
 {
-  "data": [
-    {
-      "id": "cm5xyz123",
-      "url": "https://www.digikala.com/product/dkp-12345/",
-      "type": "product",
-      "status": "published",
-      "createdAt": "2026-05-23T10:00:00Z",
-      "updatedAt": "2026-05-23T10:02:30Z",
-      "productsCount": 1
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 45,
-    "totalPages": 3
+  "success": true,
+  "data": {
+    "id": "clw...",
+    "status": "REVIEWED",
+    "reviewedAt": "2026-05-25T11:00:00Z",
+    "reviewedBy": "operator@company.com",
+    "publishJobId": "bullmq-job-id"
   }
 }
 ```
 
----
-
-### `GET /api/jobs/{id}`
-
-جزئیات یک job.
-
-**Response 200:**
-```json
-{
-  "id": "cm5xyz123",
-  "url": "https://www.digikala.com/product/dkp-12345/",
-  "type": "product",
-  "status": "published",
-  "options": {
-    "processWithAI": true,
-    "autoPublish": false
-  },
-  "products": [
-    {
-      "id": "cm5abc456",
-      "title": "کابل شارژر USB-C",
-      "status": "published",
-      "ghatelineUuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    }
-  ],
-  "logs": [
-    {
-      "level": "info",
-      "message": "Crawl started",
-      "timestamp": "2026-05-23T10:00:05Z"
-    }
-  ],
-  "createdAt": "2026-05-23T10:00:00Z",
-  "updatedAt": "2026-05-23T10:02:30Z"
-}
-```
-
-**Response 404:**
-```json
-{
-  "error": "JOB_NOT_FOUND",
-  "message": "Job with id cm5xyz123 not found"
-}
-```
+**Response 400:** اگر status قابل تایید نباشد
 
 ---
 
-### `GET /api/products`
+#### `POST /api/crawled-products/[id]/reject`
 
-لیست محصولات کرال‌شده.
+رد کردن محصول توسط اپراتور — status به REJECTED تغییر می‌کند.
 
-**Query Parameters:**
-```
-status?: "raw" | "processed" | "published" | "failed"
-jobId?: string
-page?: number (default: 1)
-limit?: number (default: 20)
-```
+**محدودیت:** محصولات PUBLISHED و از قبل REJECTED قابل رد شدن نیستند
 
-**Response 200:**
+**Request Body (اختیاری):**
 ```json
 {
-  "data": [
-    {
-      "id": "cm5abc456",
-      "jobId": "cm5xyz123",
-      "sourceUrl": "https://www.digikala.com/product/dkp-12345/",
-      "title": "کابل شارژر USB-C سامسونگ",
-      "status": "published",
-      "ghatelineUuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "createdAt": "2026-05-23T10:00:00Z"
-    }
-  ],
-  "pagination": { "page": 1, "limit": 20, "total": 120, "totalPages": 6 }
+  "reason": "کیفیت تصاویر پایین است"
 }
 ```
-
----
-
-### `POST /api/products/{id}/publish`
-
-انتشار دستی یک محصول (وقتی autoPublish غیرفعال است).
 
 **Response 200:**
 ```json
 {
   "success": true,
-  "ghatelineUuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
----
-
-### `DELETE /api/jobs/{id}`
-
-لغو یک job در صف (فقط برای status: pending).
-
-**Response 200:**
-```json
-{
-  "success": true,
-  "message": "Job cancelled"
+  "data": {
+    "id": "clw...",
+    "status": "REJECTED",
+    "reason": "کیفیت تصاویر پایین است"
+  }
 }
 ```
 
@@ -335,11 +574,6 @@ status?:   "publish"|"draft"
 }
 ```
 
-**Response 404:**
-```json
-{ "success": false, "message": "Product not found", "code": 404 }
-```
-
 **TypeScript:** `ProductsApi.get(uuid)` → `GhatelineProduct`
 
 ---
@@ -380,28 +614,6 @@ status?:   "publish"|"draft"
 | `sub_categories` | integer[] | — | دسته‌بندی‌های فرعی |
 | `uuid` | string (UUID) | — | برای ایجاد idempotent |
 
-**مثال Request Body (حداقل فیلدها):**
-```json
-{
-  "user_id": 42,
-  "category_id": 7,
-  "title": "فیلتر روغن سامسونگ",
-  "brand": "سامسونگ",
-  "content": "<p>توضیحات کامل محصول</p>",
-  "attrs": [
-    { "key": "جنس", "value": "فلز" },
-    { "key": "گارانتی", "value": "۶ ماهه" }
-  ],
-  "images": [
-    { "url": "https://cdn.example.com/img1.jpg", "is_main": true }
-  ],
-  "price_model": [
-    { "title": "استاندارد", "price": 150000, "in_stock": true }
-  ],
-  "status": "draft"
-}
-```
-
 **Response 200/201:**
 ```json
 {
@@ -414,18 +626,6 @@ status?:   "publish"|"draft"
 
 > ⚠️ فیلد برگشتی `product_uuid` است نه `uuid`
 
-**Response 422:**
-```json
-{
-  "success": false,
-  "message": "The given data was invalid.",
-  "errors": {
-    "title": ["The title field is required."],
-    "user_id": ["The user id field must be an integer."]
-  }
-}
-```
-
 **TypeScript:** `ProductsApi.create(data)` → `{ product_uuid: string }`
 
 ---
@@ -433,28 +633,6 @@ status?:   "publish"|"draft"
 ### `PUT /api/v1/products/{uuid}`
 
 ویرایش جزئی یا کامل یک محصول.
-
-**Path Parameter:** `uuid` — UUID v4 محصول
-
-**Request Body:** هر subset از فیلدهای `CreateProductRequest` (همه اختیاری)
-
-```json
-{
-  "title": "عنوان ویرایش‌شده",
-  "status": "publish",
-  "attrs": [
-    { "key": "جنس", "value": "آلومینیوم" }
-  ]
-}
-```
-
-**Response 200:**
-```json
-{
-  "success": true,
-  "message": "محصول با موفقیت ویرایش شد"
-}
-```
 
 **TypeScript:** `ProductsApi.update(uuid, data)` → `void`
 
@@ -464,16 +642,6 @@ status?:   "publish"|"draft"
 
 حذف دائمی یک محصول.
 
-**Path Parameter:** `uuid` — UUID v4 محصول
-
-**Response 200:**
-```json
-{
-  "success": true,
-  "message": "محصول با موفقیت حذف شد"
-}
-```
-
 **TypeScript:** `ProductsApi.delete(uuid)` → `void`
 
 ---
@@ -482,65 +650,7 @@ status?:   "publish"|"draft"
 
 لیست موجودی‌های یک محصول.
 
-**Path Parameter:** `product_uuid` — UUID محصول
-
-**Query Parameters:**
-```
-page?:     number — شماره صفحه
-per_page?: number (1–100)
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-      "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-      "user_id": 42,
-      "price": 450000,
-      "discount_price": 400000,
-      "count": 10,
-      "original": true,
-      "weight": 350,
-      "variables": { "رنگ": "مشکی" },
-      "created_at": "2026-05-23T10:00:00Z",
-      "updated_at": "2026-05-23T10:00:00Z"
-    }
-  ],
-  "meta": { "current_page": 1, "per_page": 20, "total": 1, "last_page": 1 }
-}
-```
-
 **TypeScript:** `InventoriesApi.listByProduct(productUuid, params?)` → `PaginatedResponse<GhatelineInventory>`
-
----
-
-### `GET /api/v1/inventories/show/{inventory_uuid}`
-
-جزئیات یک موجودی خاص.
-
-**Path Parameter:** `inventory_uuid` — UUID موجودی
-
-**Response 200:**
-```json
-{
-  "data": {
-    "uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-    "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-    "user_id": 42,
-    "price": 450000,
-    "count": 10,
-    "original": true,
-    "created_at": "2026-05-23T10:00:00Z",
-    "updated_at": "2026-05-23T10:00:00Z"
-  }
-}
-```
-
-**TypeScript:** `InventoriesApi.get(inventoryUuid)` → `GhatelineInventory`
 
 ---
 
@@ -548,10 +658,7 @@ per_page?: number (1–100)
 
 ایجاد موجودی برای یک محصول.
 
-**Path Parameter:**
-- `product_uuid`: UUID محصولی که موجودی برایش ایجاد می‌شود
-
-**Request Body — فیلدهای کامل:**
+**Request Body — فیلدهای اجباری:**
 
 | فیلد | نوع | اجباری | توضیح |
 |------|-----|--------|-------|
@@ -559,46 +666,6 @@ per_page?: number (1–100)
 | `storage_uuid` | string (UUID) | ✅ | از `GHATELINE_DEFAULT_STORAGE_UUID` |
 | `price` | integer | ✅ | قیمت فروش — ریال |
 | `count` | integer | ✅ | تعداد موجودی |
-| `variables` | object | — | variants انتخابی `{ "رنگ": "مشکی" }` — باید با price_model محصول مطابقت داشته باشد |
-| `discount_price` | integer | — | قیمت با تخفیف — ریال |
-| `discount_expire` | string | — | تاریخ انقضا تخفیف — فرمت `Y/m/d` (مثال: `1403/9/15`) |
-| `discount_tree` | integer[] | — | آرایه‌ای از id های درخت تخفیف |
-| `min_sale` | integer | — | حداقل تعداد در هر سفارش |
-| `max_sale` | integer | — | حداکثر تعداد در هر سفارش |
-| `original` | boolean | — | آیا محصول اصل است |
-| `used` | boolean | — | آیا محصول دست دوم است |
-| `weight` | integer | — | وزن — گرم |
-| `purchase_price` | integer | — | قیمت خرید (هزینه تمام‌شده) — ریال |
-| `image` | object | — | `{ url: string, alt?: string }` |
-| `send_time` | string | — | زمان ارسال |
-
-**مثال Request Body:**
-```json
-{
-  "user_id": 42,
-  "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-  "price": 450000,
-  "count": 10,
-  "original": true,
-  "weight": 350,
-  "discount_price": 400000,
-  "discount_expire": "1403/9/30"
-}
-```
-
-**مثال با variables (محصول دارای variant):**
-```json
-{
-  "user_id": 42,
-  "storage_uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-  "price": 450000,
-  "count": 5,
-  "variables": {
-    "رنگ": "مشکی",
-    "سایز": "XL"
-  }
-}
-```
 
 **Response 200/201:**
 ```json
@@ -620,57 +687,7 @@ per_page?: number (1–100)
 
 لیست انبارهای موجود.
 
-**Query Parameters:**
-```
-page?:     number
-per_page?: number (1–100)
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "uuid": "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz",
-      "name": "انبار اصلی",
-      "status": "active",
-      "created_at": "2026-01-01T00:00:00Z",
-      "updated_at": "2026-01-01T00:00:00Z"
-    }
-  ]
-}
-```
-
 **TypeScript:** `StoragesApi.list(params?)` → `PaginatedResponse<GhatelineStorage>`
-
----
-
-### `GET /api/v1/storages/products/{storage_uuid}`
-
-لیست محصولات موجود در یک انبار.
-
-**Path Parameter:** `storage_uuid` — UUID انبار
-
-**Query Parameters:**
-```
-page?:     number
-per_page?: number (1–100)
-```
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "product_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "title": "فیلتر روغن بوش پراید ۱۳۱",
-      "quantity": 10
-    }
-  ]
-}
-```
-
-**TypeScript:** `StoragesApi.listProducts(storageUuid, params?)` → `PaginatedResponse<GhatelineStorageProduct>`
 
 ---
 
@@ -695,31 +712,15 @@ per_page?: number (1–100)
 **Model:** `gpt-4o` (پیش‌فرض، قابل تغییر با `OPENAI_MODEL`)
 **Auth:** `OPENAI_API_KEY`
 
-**مزیت کلیدی:** استفاده از `response_format: { type: "json_object" }` — OpenAI تضمین می‌کند خروجی همیشه JSON معتبر باشد.
-
 ### پردازش محصول — `AIProcessor.processProduct`
 
 **ورودی:** `CrawledProductData` + `categoriesList: string[]`
-
-**تنظیمات API:**
-```typescript
-openaiClient.chat.completions.create({
-  model: "gpt-4o",
-  response_format: { type: "json_object" },
-  max_tokens: 2048,
-  stream: false,
-  messages: [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ],
-});
-```
 
 **خروجی validate‌شده (`AIProcessingOutput`):**
 ```json
 {
   "title": "عنوان فارسی ۶۰-۸۰ کاراکتر SEO-friendly",
-  "description": "<p>توضیحات HTML کامل فارسی...</p><ul><li>ویژگی</li></ul>",
+  "description": "<p>توضیحات HTML کامل فارسی...</p>",
   "category": "لوازم جانبی خودرو",
   "attrs": [
     { "key": "رنگ", "value": "مشکی" },
@@ -732,14 +733,10 @@ openaiClient.chat.completions.create({
 }
 ```
 
-**مکانیزم retry:**
-- اگر Zod validation شکست خورد، یک بار retry با پیام تصحیح انجام می‌شود
-- اگر retry هم شکست خورد، `AIProcessingError` throw می‌شود
-
 **Container نهایی در DB (`processedData`):**
 ```json
 {
-  "output": { ...AIProcessingOutput... },
+  "output": { "...AIProcessingOutput..." },
   "meta": {
     "model": "gpt-4o",
     "inputTokens": 850,
@@ -750,175 +747,30 @@ openaiClient.chat.completions.create({
 }
 ```
 
-**تست CLI:**
-```bash
-npx tsx scripts/test-ai.ts ./sample-product.json
-# یا با دسته‌بندی‌های سفارشی:
-npx tsx scripts/test-ai.ts ./sample-product.json "لوازم جانبی,ابزار,قطعات"
-```
-
 ---
 
----
+## TypeScript Types
 
-## TypeScript Types و Zod Schemas
-
-> تعریف کامل types در `src/types/` و schemas در `src/lib/crawler/` است.
-
----
+> تعریف کامل types در `src/types/` است.
 
 ### `src/types/common.ts`
+- `Result<T, E>` — خروجی توابع قابل شکست
+- `PaginatedResponse<T>` — پاسخ لیستی
+- `CrawlJobStatus`, `CrawledProductStatus`, `LogLevel` — status enums
 
-```typescript
-// Result<T, E> — خروجی توابع قابل شکست
-type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E };
-
-// PaginatedResponse<T> — پاسخ لیستی
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: { page: number; limit: number; total: number; totalPages: number };
-}
-
-// Status strings (هم‌راستا با Prisma enums)
-type CrawlJobStatus    = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-type CrawledProductStatus = 'RAW' | 'PROCESSED' | 'REVIEWED' | 'PUBLISHED' | 'REJECTED' | 'FAILED';
-type LogLevel          = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
-```
-
----
+### `src/lib/api-helpers.ts`
+- `ApiSuccess<T>`, `ApiError`, `ApiResponse<T>` — types پاسخ API
+- `apiHandler()` — wrapper برای error handling و type-safe routing
+- `ok()`, `created()`, `notFound()`, `badRequest()` — سازنده‌های response
+- `PaginationSchema`, `getPaginationSkip()`, `buildPaginationMeta()` — ابزارهای pagination
 
 ### `src/types/crawler.ts`
-
-**ساختار خروجی استاندارد هر crawler adapter — ذخیره در `rawData` جدول `crawled_products`:**
-
-```typescript
-type CrawledProductData = {
-  source: {
-    siteSlug: string;   // مثال: 'digikala'
-    url: string;        // URL کامل صفحه محصول
-    crawledAt: string;  // ISO 8601
-  };
-  product: {
-    title: string;
-    description?: string;             // ممکن است HTML داشته باشد
-    images: string[];                 // URL های معتبر
-    attributes: Record<string, string>; // مشخصات فنی key-value
-    category?: string;
-    brand?: string;
-  };
-  inventory: {
-    price: number;          // ریال، عدد صحیح
-    originalPrice?: number; // قبل از تخفیف
-    inStock: boolean;
-    quantity?: number;
-  };
-};
-```
-
-**Zod schema:** `CrawledProductDataSchema` — برای runtime validation
-
----
-
-### `src/types/ghateline.ts`
-
-**Types مربوط به API قطعه‌لاین:**
-
-```typescript
-// درخواست ایجاد محصول → POST /api/v1/products/create
-interface CreateProductRequest {
-  title: string;
-  price: number;
-  user_id: string;         // از GHATELINE_ADMIN_USER_ID
-  description?: string;
-  status?: 'draft' | 'active' | 'inactive';
-  attributes?: Record<string, string>;
-  images?: string[];
-}
-
-// درخواست ایجاد موجودی → POST /api/v1/inventories/product/{uuid}/create
-interface CreateInventoryRequest {
-  storage_uuid: string;    // از GHATELINE_DEFAULT_STORAGE_UUID
-  quantity: number;
-  price: number;
-  status?: 'available' | 'unavailable';
-}
-
-// wrapper پاسخ API (برخی endpoint ها data، برخی response می‌دهند)
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  response?: T;
-  code?: number;
-  message?: string;
-}
-```
-
----
+- `CrawledProductData` — ساختار rawData
 
 ### `src/types/ai.ts`
-
-**Types مربوط به پردازش Claude AI — ذخیره در `processedData`:**
-
-```typescript
-// ورودی به Claude
-interface AIProcessingInput {
-  rawTitle: string;
-  rawDescription?: string;
-  price: number;
-  attributes: Record<string, string>;
-  imageCount: number;
-  sourceUrl: string;
-  sourceSite: string;
-}
-
-// خروجی Claude (validate شده با Zod schema)
-type AIProcessingOutput = {
-  title: string;        // ۵–۱۰۰ کاراکتر
-  description: string;  // ۵۰–۱۰۰۰ کاراکتر
-  categoryHint?: string;
-  keywords: string[];   // ۳–۱۰ کلیدواژه
-  attributes?: Record<string, string>;
-  brand?: string;
-  confidence: number;   // 0–1
-};
-
-// container کامل processedData در DB
-interface ProcessedProductData {
-  output: AIProcessingOutput;
-  meta: {
-    model: string;
-    inputTokens: number;
-    outputTokens: number;
-    durationMs: number;
-    processedAt: string; // ISO 8601
-  };
-}
-```
-
-**Zod schema:** `AIProcessingOutputSchema` — برای validate کردن JSON خروجی Claude
+- `AIProcessingOutput` — خروجی Claude AI
+- `ProcessedProductData` — container processedData در DB
 
 ---
 
-### `src/lib/crawler/schema.ts`
-
-**توابع validation:**
-
-```typescript
-// validate یک محصول — برگشت Result<CrawledProductData>
-function validateCrawledData(data: unknown): Result<CrawledProductData>
-
-// type guard
-function isValidProductData(data: unknown): data is CrawledProductData
-
-// validate آرایه محصولات (برای category crawl)
-function validateCrawledDataArray(data: unknown): Result<CrawledProductData[]>
-
-// type guard برای آرایه
-function isValidProductDataArray(data: unknown): data is CrawledProductData[]
-```
-
----
-
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 1.0 (Types & Schemas) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-25 — Admin Panel API Routes (فاز 3) پیاده‌سازی شد*

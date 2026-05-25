@@ -53,6 +53,7 @@
 
 | # | تسک | وضعیت | وابستگی |
 |---|-----|--------|---------|
+| 3.0 | API Routes پنل ادمین (sites, crawl-jobs, crawled-products + approve/reject) + api-helpers.ts + API_CONTRACTS.md | ✅ | فاز 2 |
 | 3.1 | NextAuth.js setup + صفحه login | ⬜ | فاز 2 کامل |
 | 3.2 | Layout پنل + navigation | ⬜ | 3.1 |
 | 3.3 | صفحه Dashboard (آمار کلی) | ⬜ | 3.2 |
@@ -89,4 +90,4 @@
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-25 — تسک 1.4، 2.3، 2.4 (BullMQ Queue + Workers) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-25 — تسک 3.0 (Admin Panel API Routes) کامل شد*
