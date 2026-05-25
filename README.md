@@ -92,15 +92,38 @@ npx prisma db seed
 
 ### ۶. اجرا
 
+> **مهم:** Next.js و Workers باید در دو ترمینال جداگانه اجرا شوند.
+
 ```bash
-# ترمینال ۱ — Next.js dev server
+# ترمینال ۱ — Next.js dev server (API Routes + پنل)
 npm run dev
 
-# ترمینال ۲ — BullMQ workers
-npm run worker
+# ترمینال ۲ — BullMQ workers (کرال + AI + انتشار)
+npm run worker:dev
 ```
 
 پنل مدیریت در `http://localhost:3000` در دسترس است.
+
+#### چرا Workers جدا از Next.js اجرا می‌شوند؟
+
+Workers فرآیندهای طولانی‌مدت هستند که به طور مداوم صف BullMQ را listen می‌کنند.
+Next.js یک وب سرور است که request/response را مدیریت می‌کند.
+این دو در معماری مجزا بهتر کار می‌کنند:
+
+```
+┌─────────────────────────┐     ┌──────────────────────────────┐
+│  Next.js (port 3000)    │     │  Workers (no port)           │
+│  - API Routes           │     │  - CrawlWorker (concurrency=3)│
+│  - پنل مدیریت          │◄────►│  - AIWorker    (concurrency=2)│
+│  - enqueue کردن jobs    │     │  - PublishWorker (concurrency=1)│
+└─────────────────────────┘     └──────────────────────────────┘
+         │                                   │
+         └──────────────┬────────────────────┘
+                        │
+              ┌──────────┴──────────┐
+              │      Redis          │  ← BullMQ Queue Broker
+              └─────────────────────┘
+```
 
 ---
 
@@ -116,14 +139,42 @@ npx tsc --noEmit
 # Build کامل
 npm run build
 
-# تست دستی کرالر
+# تست دستی کرالر (بدون DB)
 npm run test:crawl -- <url>
+
+# تست دستی pipeline کامل (نیاز به DB + Redis + Worker)
+npm run test:pipeline -- <url>
 
 # تست AI processor
 npm run test:ai
 
 # تست Ghateline API
 npm run test:ghateline
+```
+
+### تست Pipeline کامل
+
+برای تست کامل کرال → AI:
+
+```bash
+# ۱. services را راه‌اندازی کنید
+docker compose up -d
+
+# ۲. migration را اعمال کنید
+npx prisma migrate dev
+
+# ۳. Worker را در یک terminal راه‌اندازی کنید
+npm run worker:dev
+
+# ۴. در terminal دیگر، pipeline را تست کنید
+npm run test:pipeline -- https://www.yadakmarket.com/product/...
+```
+
+وضعیت هر ۳ ثانیه نمایش داده می‌شود:
+```
+[۱۲:۳۰:۱۵] 📥  وضعیت: RAW
+[۱۲:۳۰:۱۸] 🤖  وضعیت: PROCESSED
+✅ Pipeline تا مرحله AI کامل شد!
 ```
 
 ---

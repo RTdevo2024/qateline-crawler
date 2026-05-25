@@ -38,3 +38,23 @@ export class ParseError extends CrawlerError {
     this.name = 'ParseError';
   }
 }
+
+/**
+ * PartialFetchError — صفحه پس از همه retry ها timeout خورد، اما HTML جزئی دریافت شد.
+ *
+ * با FetchError فرق دارد: اینجا حداقل بخشی از صفحه لود شده.
+ * BaseAdapter.crawl() این خطا را catch می‌کند و تلاش می‌کند از HTML جزئی extract کند.
+ * اگر extraction موفق شد → CrawledProductData برمی‌گرداند (RAW status).
+ * اگر extraction هم شکست خورد → error را re-throw می‌کند → crawl-worker به status=PARTIAL ست می‌کند.
+ */
+export class PartialFetchError extends CrawlerError {
+  constructor(
+    message: string,
+    /** HTML جزئی که قبل از timeout آخر دریافت شد */
+    public readonly partialHtml: string,
+    metadata: CrawlerErrorMetadata = {},
+  ) {
+    super(message, 'PARTIAL_FETCH', metadata);
+    this.name = 'PartialFetchError';
+  }
+}

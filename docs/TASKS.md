@@ -29,7 +29,7 @@
 | 1.1b | YadakMarketAdapter (WooCommerce) + adapters/index.ts + تست‌های node:test + CLI test-crawl.ts | ✅ | 1.1 |
 | 1.2 | `DigikalaCrawler` با Playwright | ⬜ | 1.1 |
 | 1.3 | `ProductRepository` و `JobRepository` | ⬜ | 0.6 |
-| 1.4 | BullMQ `crawl.queue` و `crawl.worker` | ⬜ | 1.2, 1.3, 0.7 |
+| 1.4 | BullMQ queue+workers — connection/queues/jobs + crawl/ai/publish workers + index.ts | ✅ | 0.7 |
 | 1.5 | `POST /api/crawl/start` route handler | ⬜ | 1.4 |
 | 1.6 | `GET /api/jobs/{id}` route handler | ⬜ | 1.3 |
 | 1.7 | تست دستی: کرال کامل یک محصول دیجی‌کالا | ⬜ | 1.1–1.6 |
@@ -43,8 +43,8 @@
 | 2.1 | OpenAI GPT-4o client + prompt template + AIProcessor | ✅ | فاز 1 کامل |
 | 2.2 | `GhatelineClient` + `ProductsApi` + types + singleton + CLI test | ✅ | فاز 1 کامل |
 | 2.2b | `InventoriesApi` + `StoragesApi` + `Publisher` (rollback) + CLI test-publish.ts | ✅ | 2.2 |
-| 2.3 | BullMQ `publish.worker` | ⬜ | 2.1, 2.2b |
-| 2.4 | اتصال `crawl.worker` به `publish.worker` | ⬜ | 2.3 |
+| 2.3 | BullMQ workers (crawl→ai→publish pipeline) + test-pipeline.ts + graceful shutdown | ✅ | 2.1, 2.2b |
+| 2.4 | اتصال pipeline: crawl→ai خودکار، ai→publish دستی (review) | ✅ | 2.3 |
 | 2.5 | تست دستی: چرخه کامل کرال → AI → آپلود | ⬜ | 2.1–2.4 |
 
 ---
@@ -89,4 +89,4 @@
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-25 — تسک 0.8 (docker-compose + env + README) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-25 — تسک 1.4، 2.3، 2.4 (BullMQ Queue + Workers) کامل شد*

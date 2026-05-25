@@ -9,8 +9,10 @@ export interface FetchOptions {
   timeout?: number;
   userAgent?: string;
   headers?: Record<string, string>;
-  /** فقط BrowserFetcher از این استفاده می‌کند */
+  /** فقط BrowserFetcher از این استفاده می‌کند — اولین attempt */
   waitUntil?: 'domcontentloaded' | 'networkidle' | 'load';
+  /** حداکثر retry ها برای BrowserFetcher — پیش‌فرض: 2 */
+  maxRetries?: number;
 }
 
 export interface Fetcher {

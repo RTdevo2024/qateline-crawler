@@ -80,6 +80,10 @@ enum CrawledProductStatus {
   REVIEWED
   PUBLISHED
   REJECTED
+  /// کرال جزئی: صفحه کاملاً لود نشد و extraction هم ممکن نبود
+  /// rawData = null، errorMessage حاوی توضیح است
+  /// اپراتور می‌تواند دستی retry کند یا رد کند
+  PARTIAL
   FAILED
 }
 

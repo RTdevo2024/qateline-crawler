@@ -10,8 +10,8 @@
 | فاز | عنوان | وضعیت | پیشرفت |
 |-----|-------|--------|--------|
 | 0 | راه‌اندازی | ✅ کامل | 7/7 |
-| 1 | هسته کرالر | 🔄 در حال اجرا | 2/8 |
-| 2 | AI و یکپارچه‌سازی | ⏳ منتظر | 0/5 |
+| 1 | هسته کرالر | 🔄 در حال اجرا | 3/8 |
+| 2 | AI و یکپارچه‌سازی | 🔄 در حال اجرا | 4/5 |
 | 3 | پنل مدیریت | ⏳ منتظر | 0/6 |
 | 4 | تست و دیپلوی | ⏳ منتظر | 0/4 |
 
@@ -51,14 +51,15 @@
 - [x] adapters/index.ts — ثبت همه adapters با adapterRegistry.register
 - [x] تست‌های node:test برای YadakMarketAdapter — 17/17 پاس
 - [x] scripts/test-crawl.ts — CLI برای تست دستی (npm run test:crawl -- <url>)
+- [x] BullMQ Queue + Worker سیستم — crawl/ai/publish worker + queue + jobs + connection
+- [x] scripts/test-pipeline.ts — CLI تست pipeline کامل (npm run test:pipeline -- <url>)
+- [x] تست یکپارچه pipeline — کرال yadakmarket (پژو 206 تسمه تایم) موفق: rawData کامل، AIWorker جواب داد (401 = API key placeholder)
 - [ ] پیاده‌سازی `DigikalaCrawler` با Playwright
-- [ ] BullMQ `crawl.queue` و `crawl.worker`
 - [ ] Repository: `ProductRepository` و `JobRepository`
 - [ ] API Route: `POST /api/crawl/start`
 - [ ] API Route: `GET /api/jobs/{id}`
-- [ ] تست دستی: کرال یک محصول دیجی‌کالا
 
-**بلاک‌ها:** هیچ
+**بلاک‌ها:** OpenAI API key واقعی برای تست کامل AI processing
 
 ---
 
@@ -77,7 +78,7 @@
 - [x] npm install openai + OPENAI_API_KEY در .env.example + npm run test:ai script
 - [x] کلاینت API قطعه‌لاین — GhatelineClient (axios+auth)، ProductsApi (Zod)، types کامل، singleton، CLI test
 - [x] InventoriesApi + StoragesApi + Publisher (rollback) + singleton‌ها + CLI test-publish.ts + API_CONTRACTS.md کامل
-- [ ] BullMQ `publish.worker` برای آپلود به قطعه‌لاین
+- [x] BullMQ workers — crawl-worker، ai-worker، publish-worker + workers/index.ts با graceful shutdown
 - [ ] تست دستی: کرال + پردازش + آپلود یک محصول کامل
 
 **بلاک‌ها:** نیاز به API key قطعه‌لاین معتبر
@@ -130,7 +131,12 @@
 | 2026-05-23 | 2 | ghateline-client | src/lib/ghateline/{types,client,products,index}.ts، scripts/test-ghateline-products.ts، docs/API_CONTRACTS.md — tsc پاک |
 | 2026-05-23 | 2 | ghateline-inventory | inventories.ts، storages.ts، publisher.ts (rollback)، index.ts آپدیت، scripts/test-publish.ts، API_CONTRACTS.md کامل — tsc پاک |
 | 2026-05-25 | 0 | infra | docker-compose.yml (postgres+redis با healthcheck+volumes)، .env.example آپدیت، README.md راه‌اندازی کامل — tsc پاک، build پاک |
+| 2026-05-25 | 1+2 | queue+workers | src/lib/queue/{connection,queues,jobs}.ts + src/workers/{crawl,ai,publish,index}.ts + scripts/test-pipeline.ts + package.json worker:dev + README آپدیت — tsc پاک |
+| 2026-05-25 | 1 | browser-fetcher | browser-fetcher.ts بازنویسی کامل: retry (load 60s → domcontentloaded 90s) + PartialFetchError + partial recovery — tsc پاک |
+| 2026-05-25 | 1 | anti-detection | RETRYABLE_NETWORK_ERRORS، anti-bot (webdriver، plugins، Sec-Fetch headers)، ERR_CONNECTION_TIMED_OUT رفع شد — tsc پاک |
+| 2026-05-25 | 0 | env+db | .env.local، prisma db push --skip-generate، prisma db seed — DB synced، PARTIAL enum اضافه شد |
+| 2026-05-25 | 1+2 | integration-test | تست pipeline: crawl yadakmarket موفق (rawData کامل)، AI job enqueue، AIWorker 401 (placeholder key) — pipeline کار می‌کند |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-25 — تسک 0.8 (docker-compose + env + README) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-25 — تست یکپارچه pipeline: کرال yadakmarket کامل، منتظر API key واقعی برای AI processing*

@@ -7,11 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "worker": "tsx src/workers/index.ts",
-    "test:crawl": "tsx scripts/test-crawl.ts",
+    "worker": "tsx --env-file=.env.local src/workers/index.ts",
+    "worker:dev": "tsx watch --env-file=.env.local src/workers/index.ts",
+    "test:crawl": "tsx --env-file=.env.local scripts/test-crawl.ts",
+    "test:pipeline": "tsx --env-file=.env.local scripts/test-pipeline.ts",
     "test:adapters": "node --import tsx/esm --test src/lib/crawler/adapters/__tests__/yadakmarket.test.ts",
-    "test:ai": "tsx scripts/test-ai.ts",
-    "test:ghateline": "tsx scripts/test-ghateline-products.ts"
+    "test:ai": "tsx --env-file=.env.local scripts/test-ai.ts",
+    "test:ghateline": "tsx --env-file=.env.local scripts/test-ghateline-products.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
