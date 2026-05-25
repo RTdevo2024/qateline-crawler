@@ -29,7 +29,10 @@
 - [x] shadcn/ui کامپوننت‌ها: button, input, label, card, table, badge, dialog, dropdown-menu, form, select, textarea, separator, skeleton, tabs, sonner
 - [x] تایید `npm run build` بدون خطا
 - [x] تنظیم Prisma + schema اولیه (schema.prisma، seed.ts، singleton client) — فاز 1
-- [ ] اجرای migration روی DB واقعی (`npx prisma migrate dev --name init`)
+- [x] docker-compose.yml — PostgreSQL + Redis با healthcheck و volumes
+- [x] .env.example آپدیت با DATABASE_URL, REDIS_URL, OPENAI_API_KEY, GHATELINE_API_KEY, GHATELINE_API_BASE_URL
+- [x] README.md — دستورات کامل local setup (docker compose up -d، migrate، seed)
+- [ ] اجرای migration روی DB واقعی (`npx prisma migrate dev`)
 - [ ] تنظیم Redis connection + BullMQ queue اولیه (فاز 1)
 
 **بلاک‌ها:** هیچ
@@ -126,7 +129,8 @@
 | 2026-05-23 | 2 | ai-processor | src/lib/ai/{client,prompts,processor,index}.ts، scripts/test-ai.ts، types/ai.ts schema جدید — openai نصب، tsc پاک |
 | 2026-05-23 | 2 | ghateline-client | src/lib/ghateline/{types,client,products,index}.ts، scripts/test-ghateline-products.ts، docs/API_CONTRACTS.md — tsc پاک |
 | 2026-05-23 | 2 | ghateline-inventory | inventories.ts، storages.ts، publisher.ts (rollback)، index.ts آپدیت، scripts/test-publish.ts، API_CONTRACTS.md کامل — tsc پاک |
+| 2026-05-25 | 0 | infra | docker-compose.yml (postgres+redis با healthcheck+volumes)، .env.example آپدیت، README.md راه‌اندازی کامل — tsc پاک، build پاک |
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 2.2b (Inventories + Storages + Publisher) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-25 — تسک 0.8 (docker-compose + env + README) کامل شد*

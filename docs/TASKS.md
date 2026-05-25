@@ -16,6 +16,7 @@
 | 0.5 | تنظیم Prisma + schema اولیه | ✅ | 0.3 |
 | 0.6 | اجرای اولین migration + تایید اتصال DB | ⬜ | 0.5 |
 | 0.7 | تنظیم Redis + تایید اتصال | ⬜ | 0.2 |
+| 0.8 | docker-compose.yml (postgres + redis + healthcheck) + .env.example + README.md آپدیت | ✅ | 0.2 |
 
 ---
 
@@ -88,4 +89,4 @@
 
 ---
 
-*آخرین به‌روزرسانی: 2026-05-23 — تسک 2.2b (Inventories + Storages + Publisher) کامل شد*
+*آخرین به‌روزرسانی: 2026-05-25 — تسک 0.8 (docker-compose + env + README) کامل شد*

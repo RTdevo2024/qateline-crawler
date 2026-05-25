@@ -15,13 +15,15 @@
 
 ## پیش‌نیازها
 
-- Node.js 20+
-- PostgreSQL 16+
-- Redis 7+
+| ابزار | نسخه حداقل |
+|-------|------------|
+| Node.js | 20.x |
+| npm | 10.x |
+| Docker Desktop | 4.x |
 
 ---
 
-## راه‌اندازی محلی
+## راه‌اندازی محلی (Local Setup)
 
 ### ۱. Clone و نصب dependencies
 
@@ -38,55 +40,57 @@ cp .env.example .env.local
 # فایل .env.local را با مقادیر واقعی پر کنید
 ```
 
-### ۳. راه‌اندازی PostgreSQL و Redis
+**متغیرهای ضروری:**
 
-**با Docker (توصیه شده):**
+| متغیر | توضیح | مقدار پیش‌فرض (local) |
+|-------|-------|----------------------|
+| `DATABASE_URL` | آدرس اتصال PostgreSQL | `postgresql://postgres:postgres@localhost:5432/qateline_crawler` |
+| `REDIS_URL` | آدرس اتصال Redis | `redis://localhost:6379` |
+| `OPENAI_API_KEY` | کلید API اوپن‌ای‌آی | — |
+| `GHATELINE_API_KEY` | کلید API قطعه‌لاین | — |
+| `GHATELINE_API_BASE_URL` | آدرس پایه API قطعه‌لاین | `https://ghateline.com` |
+| `GHATELINE_ADMIN_USER_ID` | UUID کاربر admin | — |
+| `GHATELINE_DEFAULT_STORAGE_UUID` | UUID انبار پیش‌فرض | — |
+| `NEXTAUTH_SECRET` | کلید رمزنگاری session | — |
+| `NEXTAUTH_URL` | آدرس اپلیکیشن | `http://localhost:3000` |
+
+### ۳. راه‌اندازی سرویس‌های Docker
 
 ```bash
-# PostgreSQL
-docker run -d \
-  --name qateline-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=qateline_crawler \
-  -p 5432:5432 \
-  postgres:16
+# اجرای PostgreSQL و Redis در پس‌زمینه
+docker compose up -d
 
-# Redis
-docker run -d \
-  --name qateline-redis \
-  -p 6379:6379 \
-  redis:7
+# بررسی وضعیت و healthcheck سرویس‌ها
+docker compose ps
 ```
 
-**یا با Docker Compose (وقتی docker-compose.yml آماده شد):**
+پس از اجرا، هر دو سرویس باید وضعیت `healthy` داشته باشند:
 
-```bash
-docker compose up -d postgres redis
+```
+NAME                 STATUS
+qateline_postgres    Up X seconds (healthy)
+qateline_redis       Up X seconds (healthy)
 ```
 
-**نصب محلی (macOS):**
+**پورت‌ها:**
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+
+### ۴. Migration دیتابیس
 
 ```bash
-brew install postgresql@16 redis
-brew services start postgresql@16
-brew services start redis
+# ایجاد جداول (اولین بار یا بعد از تغییر schema)
+npx prisma migrate dev
 ```
 
-### ۴. اجرای migration‌ها و seed
+### ۵. Seed دیتابیس
 
 ```bash
-# اولین migration (ساخت جداول)
-npx prisma migrate dev --name init
-
-# اجرای seed (داده‌های اولیه)
+# پر کردن داده‌های اولیه (SourceSite‌ها، Settings پیش‌فرض)
 npx prisma db seed
-
-# مشاهده دیتابیس در مرورگر (اختیاری)
-npx prisma studio
 ```
 
-### ۵. اجرا
+### ۶. اجرا
 
 ```bash
 # ترمینال ۱ — Next.js dev server
@@ -97,6 +101,52 @@ npm run worker
 ```
 
 پنل مدیریت در `http://localhost:3000` در دسترس است.
+
+---
+
+## ابزارهای کاربردی
+
+```bash
+# Prisma Studio — رابط گرافیکی دیتابیس
+npx prisma studio
+
+# بررسی TypeScript
+npx tsc --noEmit
+
+# Build کامل
+npm run build
+
+# تست دستی کرالر
+npm run test:crawl -- <url>
+
+# تست AI processor
+npm run test:ai
+
+# تست Ghateline API
+npm run test:ghateline
+```
+
+---
+
+## مدیریت Docker
+
+```bash
+# شروع سرویس‌ها
+docker compose up -d
+
+# توقف سرویس‌ها (داده‌ها حفظ می‌شوند)
+docker compose stop
+
+# حذف کانتینرها (داده‌ها در volume باقی می‌مانند)
+docker compose down
+
+# حذف کامل شامل داده‌ها (با احتیاط!)
+docker compose down -v
+
+# مشاهده لاگ‌ها
+docker compose logs -f postgres
+docker compose logs -f redis
+```
 
 ---
 
@@ -132,7 +182,7 @@ npm run worker
 ## وضعیت پروژه
 
 ✅ **فاز 0 — کامل** (راه‌اندازی پایه)
-🔄 **فاز 1 — در صف** (هسته کرالر)
+🔄 **فاز 1 — در حال اجرا** (هسته کرالر)
 
 ---
 
